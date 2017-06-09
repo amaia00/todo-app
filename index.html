@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Hello React!</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.0.2/react.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.0.2/react-dom.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.23/browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+</head>
+<body>
+<div id="todo"></div>
+<script type="text/babel">
+    var todo_items = ['1 créer une structure d\'application', '2 gérer l\'affichage de données statiques', '3 gérer des données dynamiques'];
+
+
+    var TodoBanner = React.createClass({
+        render: function(){
+            return (
+                    <h3>TODO Banner</h3>
+            );
+        }
+    });
+    var TodoList = React.createClass({
+        render: function(){
+            var listitem = [];
+            for(var i = 0; i<this.props.listetodos.length;i++) {
+                listitem.push(<TodoListItem  key={i} item={this.props.listetodos[i]}/>);
+            }
+
+            return (
+                    <ul>{listitem}</ul>
+
+
+    );
+        }
+    });
+    var TodoInput = React.createClass({
+        render: function(){
+            return (
+                    <h3>TODO INPUT</h3>
+            );
+        }
+    });
+    var TodoListItem =React.createClass({
+        render: function(){
+            return (
+                    <li>{this.props.item}</li>
+            );
+        }
+    });
+    var TodoApp = React.createClass({
+        render : function () {
+            return(
+                    <div>
+                        <TodoBanner/>
+                        <TodoList listetodos={this.props.todos}/>
+                        <TodoInput/>
+                    </div>
+            );
+
+        }
+    });
+    ReactDOM.render(<TodoApp todos={todo_items}/>, document.getElementById('todo'));
+</script>
+</body>
+</html>
