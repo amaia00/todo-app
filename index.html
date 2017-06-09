@@ -1,67 +1,102 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8"/>
     <title>Hello React!</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.0.2/react.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.0.2/react-dom.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.23/browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+
+    <!-- Scripts ressources externes -->
+    <script src="http://underscorejs.org/underscore-min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.string/2.3.3/underscore.string.min.js"></script>
+    <script src="http://backbonejs.org/backbone-min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/backbone-react-component/1.0.0/backbone-react-component-min.js"></script>
 </head>
 <body>
 <div id="todo"></div>
 <script type="text/babel">
-    var todo_items = ['1 créer une structure d\'application', '2 gérer l\'affichage de données statiques', '3 gérer des données dynamiques'];
 
+    const todoItems = new Backbone.Collection([{id: 1, txt:"créer une structure d'application"},
+        {id: 2, txt:"gérer l'affichage de données statiques"}, {id: 3, txt:"gérer des données dynamiques"}]);
 
-    var TodoBanner = React.createClass({
-        render: function(){
+//    const TodoBanner = React.createClass({render: () => <h3>TODO Banner</h3>});
+//    //const TodoInput = React.createClass({render: () => <h3>TODO INPUT</h3>});
+
+    class TodoBanner extends React.Component {
+        render() {
+            return <h3>Quantité: {this.props.qtyTodos}</h3>;
+        }
+    }
+
+    class TodoInput extends React.Component{
+        constructor(props) {
+            super(props);
+            this.state = {item: ''};
+
+            this.handleChange = this.handleChange.bind(this);
+            this.handleSubmit = this.handleSubmit.bind(this);
+        }
+
+        handleChange(event) {
+            this.setState({item: event.target.value});
+        }
+
+        handleSubmit(event) {
+            this.props.newItems(this.state.item);
+            this.setState({item: ''});
+            event.preventDefault();
+            return false;
+        }
+
+        render() {
+            return <form onSubmit={this.handleSubmit}>
+                <input type="text" onChange={this.handleChange} value={this.state.item}/>
+                <input type="submit" value="Add"/>
+            </form>
+        }
+    }
+
+    class TodoListItem extends React.Component {
+        render() {
             return (
-                    <h3>TODO Banner</h3>
+                    <li>{this.props.item.id + ". " + this.props.item.txt }</li>
             );
         }
-    });
-    var TodoList = React.createClass({
-        render: function(){
-            var listitem = [];
-            for(var i = 0; i<this.props.listetodos.length;i++) {
-                listitem.push(<TodoListItem  key={i} item={this.props.listetodos[i]}/>);
+    }
+
+    class TodoList extends React.Component {
+        render() {
+            let listitem = [];
+            console.log("collection todolist", this.props.listetodos);
+            for (let i = 0; i < this.props.listetodos.length; i++) {
+                listitem.push(<TodoListItem key={this.props.listetodos[i].id} item={this.props.listetodos[i]}/>);
             }
 
-            return (
-                    <ul>{listitem}</ul>
+            return <ul>{listitem}</ul>;
+        }
+    }
 
+    const TodoApp = React.createClass({
+        mixins: [Backbone.React.Component.mixin],
 
-    );
-        }
-    });
-    var TodoInput = React.createClass({
-        render: function(){
-            return (
-                    <h3>TODO INPUT</h3>
-            );
-        }
-    });
-    var TodoListItem =React.createClass({
-        render: function(){
-            return (
-                    <li>{this.props.item}</li>
-            );
-        }
-    });
-    var TodoApp = React.createClass({
-        render : function () {
-            return(
-                    <div>
-                        <TodoBanner/>
-                        <TodoList listetodos={this.props.todos}/>
-                        <TodoInput/>
-                    </div>
-            );
+        updateItems: function(newItem) {
+            let newItemID = this.state.collection.length + 1;
+            this.props.collection.add({id:newItemID, txt:newItem});
+        },
 
+        render: function() {
+            return <div>
+                <TodoBanner qtyTodos={this.state.collection.length}/>
+                <TodoList listetodos={this.state.collection}/>
+                <TodoInput newItems={this.updateItems}/>
+            </div>;
         }
     });
-    ReactDOM.render(<TodoApp todos={todo_items}/>, document.getElementById('todo'));
+
+    ReactDOM.render(<TodoApp name="TodoList" collection={todoItems}/>, document.getElementById('todo'));
+
 </script>
 </body>
 </html>
