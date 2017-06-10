@@ -1,8 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
     <meta charset="UTF-8"/>
-    <title>Hello React!</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TODO App</title>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.0.2/react.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.0.2/react-dom.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.23/browser.min.js"></script>
@@ -15,22 +20,41 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/backbone-react-component/1.0.0/backbone-react-component-min.js"></script>
 </head>
 <body>
-<div id="todo"></div>
+<div id="todo" class="container"></div>
 <script type="text/babel">
 
-    const todoItems = new Backbone.Collection([{id: 1, txt:"créer une structure d'application"},
-        {id: 2, txt:"gérer l'affichage de données statiques"}, {id: 3, txt:"gérer des données dynamiques"}]);
+    const model = Backbone.Model.extend({
+        defaults: {
+            id: '',
+            task: '',
+            user: '',
+            completed: false
+        },
+        idAttribute: 'id',
+        url: '/test'
+    });
 
-//    const TodoBanner = React.createClass({render: () => <h3>TODO Banner</h3>});
-//    //const TodoInput = React.createClass({render: () => <h3>TODO INPUT</h3>});
+    const todoItems = new Backbone.Collection({
+        model: model,
+        comparator: 'id',
+        url: '/test'
+
+    });
+
+    todoItems.set([{id: 1, task: "créer une structure d'application"},
+        {id: 2, task: "gérer l'affichage de données statiques", completed: true}, {id: 3, task: "gérer des données dynamiques"}]);
 
     class TodoBanner extends React.Component {
         render() {
-            return <h3>Quantité: {this.props.qtyTodos}</h3>;
+            return <div className="row">
+                <div className="col-lg-12">
+                    <h4> Tâches: {this.props.qtyTodos}</h4>
+                </div><hr/>
+            </div>;
         }
     }
 
-    class TodoInput extends React.Component{
+    class TodoInput extends React.Component {
         constructor(props) {
             super(props);
             this.state = {item: ''};
@@ -44,53 +68,130 @@
         }
 
         handleSubmit(event) {
-            this.props.newItems(this.state.item);
+            this.props.addItem(this.state.item);
             this.setState({item: ''});
             event.preventDefault();
+            this.focusInput();
             return false;
         }
 
+        focusInput() {
+            this.textInput.focus();
+        }
+
         render() {
-            return <form onSubmit={this.handleSubmit}>
-                <input type="text" onChange={this.handleChange} value={this.state.item}/>
-                <input type="submit" value="Add"/>
-            </form>
+            return <div className="jumbotron">
+                <form onSubmit={this.handleSubmit}>
+                    <div className="row">
+                        <div className="col-md-9">
+                            <div className="form-group">
+                                <input type="text" className="form-control" placeholder="Entre la nouvele tâche"
+                                       onChange={this.handleChange} value={this.state.item}
+                                       ref={(input) => {
+                                           this.textInput = input;
+                                       }}/>
+                            </div>
+                        </div>
+                        <div className="col-md-3">
+                            <button type="submit" className="btn btn-primary btn-block">Add</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
         }
     }
 
     class TodoListItem extends React.Component {
         render() {
+            let cssClass = 'list-group-item list-group-item-';
+
+            if (this.props.item.completed) cssClass += 'success';
+            else cssClass += 'info';
+
             return (
-                    <li>{this.props.item.id + ". " + this.props.item.txt }</li>
+                    <li key={this.props.item.id}
+                        className = {cssClass}>{this.props.item.id + ". " + this.props.item.task }
+                        <TaskAction
+                                index={this.props.item.id}
+                                completed={this.props.item.completed}
+                                updateItem={this.props.updateItem}
+                                removeItem={this.props.removeItem} />
+                        </li>
             );
+        }
+    }
+
+    class TaskAction extends React.Component {
+
+        updateItem() {
+            this.props.updateItem(this.props.index);
+        }
+
+        removeItem() {
+            this.props.removeItem(this.props.index);
+        }
+
+        getButton() {
+            if (!this.props.completed) {
+                return (
+                        <button type="button" onClick={(e) => this.updateItem(e)}
+                                className="btn btn-xs btn-success">
+                            <i className="glyphicon glyphicon-ok"></i>
+                        </button>
+                )
+            }
+        }
+
+        render() {
+            return (
+                    <div className="btn-group btn-group-xs pull-right" role="group">
+                        {this.getButton()}
+                        <button type="button" onClick={(e) => this.removeItem(e)}
+                                className="btn btn-xs btn-danger">
+                            <i className="glyphicon glyphicon-remove"></i>
+                        </button>
+                    </div>
+            )
         }
     }
 
     class TodoList extends React.Component {
         render() {
             let listitem = [];
-            console.log("collection todolist", this.props.listetodos);
+
             for (let i = 0; i < this.props.listetodos.length; i++) {
-                listitem.push(<TodoListItem key={this.props.listetodos[i].id} item={this.props.listetodos[i]}/>);
+                listitem.push(<TodoListItem key={this.props.listetodos[i].id} item={this.props.listetodos[i]}
+                updateItem={this.props.updateItem} removeItem={this.props.removeItem}/>);
             }
 
-            return <ul>{listitem}</ul>;
+            return <ul className="list-group">{listitem}</ul>;
         }
     }
 
     const TodoApp = React.createClass({
         mixins: [Backbone.React.Component.mixin],
 
-        updateItems: function(newItem) {
+        addItem: function (newItem) {
             let newItemID = this.state.collection.length + 1;
-            this.props.collection.add({id:newItemID, txt:newItem});
+            this.props.collection.add({id: newItemID, task: newItem});
         },
 
-        render: function() {
+        updateItem: function (id) {
+            let item = this.props.collection.findWhere({id: id});
+            item.set({completed: true});
+        },
+
+        removeItem: function (id) {
+            let item = this.props.collection.findWhere({id: id});
+            this.props.collection.remove(item);
+        },
+
+        render: function () {
             return <div>
-                <TodoBanner qtyTodos={this.state.collection.length}/>
-                <TodoList listetodos={this.state.collection}/>
-                <TodoInput newItems={this.updateItems}/>
+                <TodoBanner qtyTodos={this.state.collection.length} />
+                <TodoInput addItem={this.addItem} />
+                <TodoList listetodos={this.state.collection} updateItem={this.updateItem}
+                          removeItem={this.removeItem} />
             </div>;
         }
     });

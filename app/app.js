@@ -66,7 +66,7 @@ class TodoList extends React.Component {
 const TodoApp = React.createClass({
     mixins: [BackboneMixin],
 
-    updateItems: function(newItem) {
+    addItem: function(newItem) {
         const newItemID = this.state.collection.length + 1;
         this.props.collection.add({id:newItemID, txt:newItem});
     },
@@ -75,7 +75,7 @@ const TodoApp = React.createClass({
         return <div>
             <TodoBanner qtyTodos={this.state.collection.length}/>
             <TodoList listetodos={this.state.collection}/>
-            <TodoInput newItems={this.updateItems}/>
+            <TodoInput newItems={this.addItem}/>
         </div>;
     }
 });
