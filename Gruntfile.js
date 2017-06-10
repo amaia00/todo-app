@@ -4,7 +4,7 @@ module.exports = function(grunt) {
         express: {
             build: {        // Nom de la tache pour le sereveur
                 options : {
-                    server: ('server.js')
+                    server: ('server/server.js')
                 }
             }
         },

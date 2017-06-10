@@ -158,7 +158,6 @@
     class TodoList extends React.Component {
         render() {
             let listitem = [];
-
             for (let i = 0; i < this.props.listetodos.length; i++) {
                 listitem.push(<TodoListItem key={this.props.listetodos[i].id} item={this.props.listetodos[i]}
                 updateItem={this.props.updateItem} removeItem={this.props.removeItem}/>);

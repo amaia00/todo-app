@@ -1,6 +1,7 @@
 var express = require('express');
 var path = require('path');
 var app = module.exports = express();
+var ServerSocket = require('./socketServer.js');
 
 app.use('/dist', express.static(path.join(__dirname, '/dist')));
 
@@ -10,9 +11,7 @@ app.get('/', function(req, res) {
     res.sendFile(__dirname + '/index.html');
 });
 
-// app.get('/bundle.js', function(req, res){
-//     res.sendFile(__dirname + '/dist/bundle.js');
-// });
+ServerSocket.config.run();
 
 app.listen(3000, function () {
     console.log('App listening on port 3000!');
