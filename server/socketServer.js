@@ -6,8 +6,9 @@
 var exports = module.exports = {};
 
 var WebSocketServer = require('ws').Server;
-exports.wss = new WebSocketServer({host:'0.0.0.0',port: 8080});
+exports.wss = new WebSocketServer({host:'0.0.0.0',port: 3002});
 exports.OPEN = 1;
+exports.ID = 0;
 
 exports.config = {
     tasks: [],
@@ -57,12 +58,19 @@ exports.config = {
                     exports.config.removeTask(ws, msg);
                 }
                 break;
+
+            case '/getAllTask':
+                exports.config.tasksList();
+                break;
             default:
                 break;
         }
     },
     addTask: function(ws, client) {
-        exports.config.tasks.push(JSON.parse(client));
+        client = JSON.parse(client);
+        client.id = exports.ID + 1;
+        exports.ID++;
+        exports.config.tasks.push(client);
         exports.config.tasksList();
     },
 

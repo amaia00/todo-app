@@ -18,10 +18,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.string/2.3.3/underscore.string.min.js"></script>
     <script src="http://backbonejs.org/backbone-min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/backbone-react-component/1.0.0/backbone-react-component-min.js"></script>
+
+    <script type="text/javascript">
+        var EVENT = EVENT || {};
+    </script>
+    <script type="text/javascript" src="app/socketClient.js"></script>
 </head>
 <body>
 <div id="todo" class="container"></div>
 <script type="text/babel">
+
+    EVENT.loadTasks = _.extend({}, Backbone.Events);
 
     const model = Backbone.Model.extend({
         defaults: {
@@ -41,8 +48,8 @@
 
     });
 
-    todoItems.set([{id: 1, task: "créer une structure d'application"},
-        {id: 2, task: "gérer l'affichage de données statiques", completed: true}, {id: 3, task: "gérer des données dynamiques"}]);
+//    todoItems.set([{id: 1, task: "créer une structure d'application"},
+//        {id: 2, task: "gérer l'affichage de données statiques", completed: true}, {id: 3, task: "gérer des données dynamiques"}]);
 
     class TodoBanner extends React.Component {
         render() {
@@ -170,19 +177,31 @@
     const TodoApp = React.createClass({
         mixins: [Backbone.React.Component.mixin],
 
+        getInitialState: function (props) {
+            EVENT.loadTasks.on('load', this.loadItems, this);
+        },
+
+        componentDidMount: function () {
+            this.socket = SocketClient;
+            this.socket.init();
+            SocketClient.getAllTasks();
+        },
+
+        loadItems: function (tasks) {
+            tasks = JSON.parse(tasks);
+            this.setState({'collection': tasks});
+        },
+
         addItem: function (newItem) {
-            let newItemID = this.state.collection.length + 1;
-            this.props.collection.add({id: newItemID, task: newItem});
+            this.socket.sendAddTask({task: newItem, completed:false});
         },
 
         updateItem: function (id) {
-            let item = this.props.collection.findWhere({id: id});
-            item.set({completed: true});
+            this.socket.sendUpdateTask({id: id});
         },
 
         removeItem: function (id) {
-            let item = this.props.collection.findWhere({id: id});
-            this.props.collection.remove(item);
+            this.socket.sendRemoveTask({id: id});
         },
 
         render: function () {
@@ -195,7 +214,8 @@
         }
     });
 
-    ReactDOM.render(<TodoApp name="TodoList" collection={todoItems}/>, document.getElementById('todo'));
+    ReactDOM.render(<TodoApp name="TodoList"
+                             collection={todoItems}/>, document.getElementById('todo'));
 
 </script>
 </body>

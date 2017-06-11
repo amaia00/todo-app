@@ -8,7 +8,10 @@ app.use('/dist', express.static(path.join(__dirname, '/dist')));
 app.use('/app', express.static(path.join(__dirname, '/app')));
 
 app.get('/', function(req, res) {
-    res.sendFile(__dirname + '/index.html');
+    res.sendFile(path.resolve('index.html'));
+});
+app.get('/app/socketClient.js', function(req, res) {
+    res.sendFile(path.resolve('app/socketClient.js'));
 });
 
 ServerSocket.config.run();
