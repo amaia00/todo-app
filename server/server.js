@@ -3,16 +3,19 @@ var path = require('path');
 var app = module.exports = express();
 var ServerSocket = require('./socketServer.js');
 
-app.use('/dist', express.static(path.join(__dirname, '/dist')));
 
-app.use('/app', express.static(path.join(__dirname, '/app')));
 
-app.get('/', function(req, res) {
-    res.sendFile(path.resolve('index.html'));
-});
+app.use('/dist', express.static(path.resolve('dist')));
+app.use('/app', express.static(path.resolve('app')));
+app.use('/images', express.static(path.resolve('images')));
+app.use('/style', express.static(path.resolve('style')));
 app.get('/app/socketClient.js', function(req, res) {
     res.sendFile(path.resolve('app/socketClient.js'));
 });
+app.get('/', function(req, res) {
+    res.sendFile(path.resolve('dist/index.html'));
+});
+
 
 ServerSocket.config.run();
 
