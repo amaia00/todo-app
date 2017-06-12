@@ -9,10 +9,7 @@ app.use('/dist', express.static(path.resolve('dist')));
 app.use('/app', express.static(path.resolve('app')));
 app.use('/images', express.static(path.resolve('images')));
 app.use('/style', express.static(path.resolve('style')));
-app.get('/app/socketClient.js', function(req, res) {
-    res.sendFile(path.resolve('app/socketClient.js'));
-});
-app.get('/', function(req, res) {
+app.use('/', function(req, res) {
     res.sendFile(path.resolve('dist/index.html'));
 });
 

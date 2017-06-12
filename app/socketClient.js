@@ -1,17 +1,20 @@
 /**
  * Created by amaia.nazabal on 6/10/17.
  */
-// TODO add port to config
+// TODO addTask port to config
 const wssUrl = "ws://localhost:3002";
 
 var socket;
 var EVENT = EVENT || {};
 
 const cmd = {
-    get: '/getAllTask ',
-    add: '/addTask ',
-    update: '/updateTask ',
-    remove: '/removeTask ',
+    getTasks: '/getAllTask ',
+    addTask: '/addTask ',
+    updateTask: '/updateTask ',
+    removeTask: '/removeTask ',
+    getUsers: '/getAllUser ',
+    addUser: '/addUser ',
+    removeUser: '/removeUser ',
     disconnect: '/disconnect ',
     broadcast: '/broadcast '
 };
@@ -21,12 +24,12 @@ let SocketClient = {
     socket: null,
     tasks: [],
 
-    init: function(){
+    init: function() {
 
         socket = new WebSocket(wssUrl);
 
         socket.onopen = function(){
-            socket.send(cmd.get);
+            socket.send(cmd.getTasks);
         };
 
         socket.onmessage = function (evt) {
@@ -36,7 +39,16 @@ let SocketClient = {
                 cmd = evt.data.split(' ')[0];
                 param = evt.data.replace(cmd, '');
             }
-            EVENT.loadTasks.trigger('load', param);
+
+            console.debug("CMD --> ",  evt.data);
+
+            if (cmd === '/tasksList') {
+                EVENT.reload.trigger('tasks', param);
+                SocketClient.getAllUsers();
+            }else if (cmd === '/usersList') {
+                console.debug("trigger users");
+                EVENT.reload.trigger('users', param);
+            }
         };
 
         socket.onclose = function() {
@@ -45,20 +57,39 @@ let SocketClient = {
     },
 
     sendAddTask: function(msg){
-        socket.send(cmd.add + JSON.stringify(msg));
+        socket.send(cmd.addTask + JSON.stringify(msg));
+    },
+
+    sendAddUser: function(msg){
+        socket.send(cmd.addUser + JSON.stringify(msg));
     },
 
     sendUpdateTask: function(msg){
-        socket.send(cmd.update + JSON.stringify(msg));
+        socket.send(cmd.updateTask + JSON.stringify(msg));
     },
 
     sendRemoveTask: function(msg){
-        socket.send(cmd.remove + JSON.stringify(msg));
+        socket.send(cmd.removeTask + JSON.stringify(msg));
     },
 
-    getAllTasks: function(){
-        try{ socket.send(cmd.get); }
-        catch (e) {}
+    sendRemoveUser: function (msg) {
+        socket.send(cmd.removeUser + JSON.stringify(msg));
+    },
+
+    getAllTasks: function() {
+        try {
+            socket.send(cmd.getTasks);
+        } catch (e) {
+            console.debug("Error websocket msg: getAllTasks: " + e.message);
+        }
+    },
+    
+    getAllUsers: function () {
+        try {
+            socket.send(cmd.getUsers);
+        } catch (e) {
+            console.debug("Error websocket msg: getAllUser: " + e.message);
+        }
     },
 
     close: function(){

@@ -6,75 +6,110 @@
 var exports = module.exports = {};
 
 var WebSocketServer = require('ws').Server;
-exports.wss = new WebSocketServer({host:'0.0.0.0',port: 3002});
+exports.wss = new WebSocketServer({host: '0.0.0.0', port: 3002});
 exports.OPEN = 1;
-exports.ID = 0;
+exports.ID_TASKS = 0;
 
 exports.config = {
     tasks: [],
-    run: function() {
+    users: [],
+    run: function () {
         exports.wss.on('connection', function (ws) {
-            ws.on('message', function(message) {
-                console.log('received: %s', message);
+            ws.on('message', function (message) {
+                console.log("reveived: " + message);
                 exports.config.dispatch(ws, message);
             });
 
-            ws.on('close', function() {
+            ws.on('close', function () {
                 exports.config.tasks.remove();
                 exports.config.tasksList();
             });
         });
     },
 
-    dispatch: function(ws, message) {
-        var cmd = '';
-        var param = '';
+    dispatch: function (ws, message) {
+        try {
 
-        if(message.indexOf('/') === 0){
-            cmd = message.split(' ')[0];
-            param = message.replace(cmd, '');
-        }
 
-        var msg;
-        switch(cmd){
-            case '/broadcast':
-                exports.config.broadcast(param, ws);
-                break;
-            case '/addTask':
-                msg = param.replace(' ','');
-                if(msg !== ''){
-                    exports.config.addTask(ws, msg);
-                }
-                break;
-            case '/updateTask':
-                msg = param.replace(' ','');
-                if(msg !== ''){
-                    exports.config.updateTask(ws, msg);
-                }
-                break;
-            case '/removeTask':
-                msg = param.replace(' ','');
-                if(msg !== ''){
-                    exports.config.removeTask(ws, msg);
-                }
-                break;
+            var cmd = '';
+            var param = '';
 
-            case '/getAllTask':
-                exports.config.tasksList();
-                break;
-            default:
-                break;
+            if (message.indexOf('/') === 0) {
+                cmd = message.split(' ')[0];
+                param = message.replace(cmd, '');
+            }
+
+            var msg;
+            switch (cmd) {
+                case '/addTask':
+                    msg = param.replace(' ', '');
+                    if (msg !== '') {
+                        exports.config.addTask(ws, msg);
+                    }
+                    break;
+                case '/updateTask':
+                    msg = param.replace(' ', '');
+                    if (msg !== '') {
+                        exports.config.updateTask(ws, msg);
+                    }
+                    break;
+                case '/removeTask':
+                    msg = param.replace(' ', '');
+                    if (msg !== '') {
+                        exports.config.removeTask(ws, msg);
+                    }
+                    break;
+                case '/addUser':
+                    msg = param.replace(' ', '');
+                    if (msg !== '') {
+                        exports.config.addUser(ws, msg);
+                    }
+                    break;
+
+                case '/removeUser':
+                    msg = param.replace(' ', '');
+                    if (msg !== '') {
+                        exports.config.removeUser(ws, msg);
+                    }
+                    break;
+
+                case '/getAllTask':
+                    exports.config.tasksList();
+                    break;
+
+                case '/getAllUser':
+                    exports.config.userList();
+                    break;
+                default:
+                    break;
+            }
+
+        } catch (e) {
+            this.broadcastCommand("/error " + e.message);
         }
     },
-    addTask: function(ws, client) {
-        client = JSON.parse(client);
-        client.id = exports.ID + 1;
-        exports.ID++;
-        exports.config.tasks.push(client);
+
+    addTask: function (ws, item) {
+        item = JSON.parse(item);
+        item.id = exports.ID_TASKS + 1;
+        exports.ID_TASKS++;
+        exports.config.tasks.push(item);
         exports.config.tasksList();
     },
 
-    updateTask: function(ws, task) {
+    addUser: function (ws, user) {
+        user = JSON.parse(user);
+        var userTasks = this.tasks.find(function (item) {
+            return item.user === user.name;
+        });
+        if (typeof userTasks === 'undefined' || userTasks.length === 0) {
+            exports.config.users.push(user);
+        }
+
+        exports.config.userList();
+    },
+
+    updateTask: function (ws, task) {
         task = JSON.parse(task);
         this.tasks.find(function (item) {
             return item.id === task.id;
@@ -83,7 +118,7 @@ exports.config = {
         exports.config.tasksList();
     },
 
-    removeTask: function(ws, task) {
+    removeTask: function (ws, task) {
         task = JSON.parse(task);
         this.tasks = this.tasks.filter(function (item) {
             return item.id !== task.id;
@@ -91,11 +126,28 @@ exports.config = {
         exports.config.tasksList();
     },
 
-    tasksList: function() {
-        exports.config.broadcastCommand('/tasksList '+ JSON.stringify(this.tasks));
+    removeUser: function (ws, user) {
+        user = JSON.parse(user);
+        var userTasks = this.tasks.find(function (item) {
+            return item.user === user.name;
+        });
+        if (typeof userTasks === "undefined" || userTasks.length === 0)
+            this.users = this.users.filter(function (item) {
+                return item.name !== user.name;
+            });
+
+        exports.config.userList();
     },
 
-    broadcastCommand: function(cmd){
+    tasksList: function () {
+        exports.config.broadcastCommand('/tasksList ' + JSON.stringify(this.tasks));
+    },
+
+    userList: function () {
+        exports.config.broadcastCommand('/usersList ' + JSON.stringify(this.users));
+    },
+
+    broadcastCommand: function (cmd) {
         exports.wss.clients.forEach(function (client) {
             if (client.readyState === exports.OPEN) {
                 client.send(cmd);
