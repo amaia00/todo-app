@@ -40,13 +40,10 @@ let SocketClient = {
                 param = evt.data.replace(cmd, '');
             }
 
-            console.debug("CMD --> ",  evt.data);
-
             if (cmd === '/tasksList') {
                 EVENT.reload.trigger('tasks', param);
                 SocketClient.getAllUsers();
             }else if (cmd === '/usersList') {
-                console.debug("trigger users");
                 EVENT.reload.trigger('users', param);
             }
         };

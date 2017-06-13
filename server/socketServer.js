@@ -99,10 +99,11 @@ exports.config = {
 
     addUser: function (ws, user) {
         user = JSON.parse(user);
-        var userTasks = this.tasks.find(function (item) {
-            return item.user === user.name;
+        var userCount = this.users.filter(function (item) {
+            return item.name === user.name;
         });
-        if (typeof userTasks === 'undefined' || userTasks.length === 0) {
+
+        if (typeof userCount === 'undefined' || userCount.length === 0) {
             exports.config.users.push(user);
         }
 

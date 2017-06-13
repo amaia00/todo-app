@@ -51,45 +51,6 @@ const users = new Backbone.Collection({
     url: '/test'
 });
 users.set([]);
-//
-// const addAlluser = function (todoItem) {
-//     const list_user = [];
-//
-//     todoItem.forEach(function (item) {
-//         if (!list_user.includes(item.attributes.user)) {
-//             list_user.push(item.attributes.user);
-//         }
-//     });
-//
-//     return list_user;
-// };
-
-const list_user = [];
-
-const counterUser = function (collection) {
-    const array_counter = [];
-
-    collection.each(function (col) {
-
-        if (Object.keys(array_counter).includes(col.attributes.user)) {
-            array_counter[col.attributes.user]++
-
-        }
-        else {
-            array_counter[col.attributes.user] = 1;
-        }
-    });
-    return array_counter;
-};
-
-const removeUser = function (arr, item) {
-    for (let i = arr.length; i--;) {
-        if (arr[i] === item) {
-            arr.splice(i, 1);
-        }
-    }
-};
-
 
 class TodoBanner extends React.Component {
     render() {
@@ -129,7 +90,6 @@ class TodoInput extends React.Component {
             event.preventDefault();
 
             this.props.addItem(this.state.item, this.state.personne);
-            this.props.addUser(this.state.personne);
 
             this.setState({item: ''});
             this.setState({personne: ''});
@@ -154,7 +114,7 @@ class TodoInput extends React.Component {
                                 <span className="input-group-addon" key="basic-addon1"><span
                                     className="glyphicon glyphicon-tasks" aria-hidden="true"/></span>
                                     <input type="text" className="form-control" aria-describedby="basic-addon1"
-                                           placeholder="Entrer une nouvele tâche"
+                                           placeholder="Entrer une nouvele tâche" autoFocus="autoFocus"
                                            onChange={this.handleTaskChange} value={this.state.item}
                                            ref={(input) => {
                                                this.textInput = input;
@@ -165,10 +125,7 @@ class TodoInput extends React.Component {
                                     className="glyphicon glyphicon-user" aria-hidden="true"/></span>
                                     <input type="text" className="form-control" aria-describedby="basic-addon2"
                                            placeholder="Entrer un nom pour assigner cette tache"
-                                           onChange={this.handleUserChange} value={this.state.personne}
-                                           ref={(inputpersonne) => {
-                                               this.textInput = inputpersonne;
-                                           }}/>
+                                           onChange={this.handleUserChange} value={this.state.personne} />
                                 </div>
                             </div>
                         </div>
@@ -243,29 +200,21 @@ class TodoListItem extends React.Component {
     }
 }
 
-
 class Footer_Filtered extends React.Component {
-
-
     render() {
-
         const listuser = [];
         for (let i = 0; i < this.props.users.length; i++) {
-            listuser.push(<ReactBootstrap.MenuItem className="listes_users" key={i + this.props.users[i]}
+            listuser.push(<ReactBootstrap.MenuItem className="listes_users" key={i + this.props.users[i].name}
                                                    eventKey={i}
-                                                   href={"/#/" + this.props.special + "user/" + this.props.users[i]}>{this.props.users[i]}</ReactBootstrap.MenuItem>);
+                                                   href={"/#/" + this.props.special + "user/" + this.props.users[i].name}>{this.props.users[i].name}</ReactBootstrap.MenuItem>);
         }
         return <div> {listuser}</div>
     }
-
 }
 
 
 class Footer extends React.Component {
-
-
     render() {
-
         return (
             <div className="filter"><ReactBootstrap.ButtonToolbar
                 className={classNames({selected: this.props.nowShowing === apps.ALL_TODOS})} key="list1">
@@ -296,7 +245,6 @@ class Footer extends React.Component {
 
                 </ReactBootstrap.ButtonToolbar></div>
         );
-
     }
 }
 
@@ -336,10 +284,8 @@ class TodoList extends React.Component {
                         return false;
 
                     default:
-                        if (nowShowingsuser === listetodos.user) {
-
+                        if (nowShowingsuser === listetodos.user)
                             return listetodos.user === nowShowingsuser;
-                        }
                         else
                             return (nowShowingsuser === undefined || nowShowingsuser === apps.ALL_TODOS);
                 }
@@ -396,36 +342,31 @@ const TodoApp = React.createClass({
         this.socket.sendAddUser({name: user});
     },
 
-    addUser: function (personne) {
-        this.socket.sendAddUser(personne);
-    },
-
     updateItem: function (id) {
         this.socket.sendUpdateTask({id: id});
     },
 
     removeItem: function (idTask) {
+        const item = this.state.collection.filter(function(item) {
+            return item.id === idTask;
+        })[0];
         this.socket.sendRemoveTask({id: idTask});
-        const item = this.props.collection.findWhere({id: idTask});
-        this.socket.sendRemoveUser(item.user);
+        this.socket.sendRemoveUser({name: item.user});
     },
 
     render: function () {
         return <div><img className="image_class" src="/images/todo-list.jpg"/>
             <TodoBanner qtyTodos={this.state.collection.length}/>
-            <TodoInput addItem={this.addItem} addUser={this.addUser}/>
+            <TodoInput addItem={this.addItem} />
             <TodoList nowShowing={this.state.nowShowing} nowShowingsuser={this.state.nowShowingsuser}
                       listetodos={this.state.collection} updateItem={this.updateItem}
                       removeItem={this.removeItem} users={this.state.users} />
-
-
         </div>;
     }
 });
 
-const react = ReactDOM.render(<TodoApp name="todo-app" collection={todoItems} users={users.models}
-                                       />, document.getElementById('todo'));
-
+const react = ReactDOM.render(<TodoApp name="todo-app" collection={todoItems} users={users.models}/>,
+        document.getElementById('todo'));
 const Router = Backbone.Router.extend({
 
     routes: {
@@ -469,5 +410,6 @@ const Router = Backbone.Router.extend({
         react.setState({nowShowingsuser: param});
     }
 });
+
 const router = new Router();
 Backbone.history.start();
