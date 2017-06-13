@@ -9,13 +9,20 @@ var backboneMixin = require('backbone-react-component');
 var underscore = require('underscore');
 var classNames = require('classnames');
 var ReactBootstrap = require('react-bootstrap');
-
-
 var apps = apps || {};
+
 
 apps.ALL_TODOS = 'all';
 apps.ACTIVE_TODOS = 'active';
 apps.COMPLETED_TODOS = 'completed';
+
+/**
+ * dlon = lon2 - lon1
+ dlat = lat2 - lat1
+ a = (sin(dlat/2))^2 + cos(lat1) * cos(lat2) * (sin(dlon/2))^2
+ c = 2 * atan2( sqrt(a), sqrt(1-a) )
+ d = R * c (where R is the radius of the Earth)
+ */
 
 EVENT.reload = underscore.extend({}, Backbone.Events);
 
@@ -24,7 +31,10 @@ const taskModel = Backbone.Model.extend({
         id: '',
         task: '',
         user: '',
-        completed: false
+        completed: false,
+        lon:'',
+        lat: '',
+        rappel: ''
     },
     idAttribute: 'id',
     url: '/test'
@@ -52,6 +62,83 @@ const users = new Backbone.Collection({
 });
 users.set([]);
 
+/*var onSuccess = function(position) {
+    console.log('Latitude: '          + position.coords.latitude          + '\n' +
+        'Longitude: '         + position.coords.longitude         + '\n' +
+        'Altitude: '          + position.coords.altitude          + '\n' +
+        'Accuracy: '          + position.coords.accuracy          + '\n' +
+        'Altitude Accuracy: ' + position.coords.altitudeAccuracy  + '\n' +
+        'Heading: '           + position.coords.heading           + '\n' +
+        'Speed: '             + position.coords.speed             + '\n' +
+        'Timestamp: '         + position.timestamp                + '\n');
+};
+
+function onError(error) {
+    console.log('code: '    + error.code    + '\n' +
+        'message: ' + error.message + '\n');
+}
+
+navigator.geolocation.getCurrentPosition(onSuccess, onError, { maximumAge: 3000, timeout: 60000, enableHighAccuracy: true });*/
+
+// onSuccess Callback
+//   This method accepts a `Position` object, which contains
+//   the current GPS coordinates
+//
+function onSuccess(position) {
+    var info = [];
+    info.push(position.coords.latitude);
+    info.push(position.coords.longitude)
+
+
+    return info;
+}
+
+// onError Callback receives a PositionError object
+//
+function onError(error) {
+    console.log('code: '    + error.code    + '\n' +
+        'message: ' + error.message + '\n');
+}
+
+// Options: throw an error if no update is received every 30 seconds.
+//
+var watchID = navigator.geolocation.watchPosition(onSuccess, onError, { timeout: 300000 });
+
+
+var getGeoCoordinates = function GetGeoCoordinates(addresse, callback){
+    var getGeocoder = new google.maps.Geocoder();
+    var add = {lat:'', long: ''};
+    getGeocoder.geocode( { 'address': addresse}, function(results, status) {
+        if (status == google.maps.GeocoderStatus.OK) {
+            if (results[0]) {
+                var latitude = results[0].geometry.location.lat();
+                var longitude = results[0].geometry.location.lng();
+                add['lat']=latitude;
+                add['long']=longitude;
+                    callback(add);
+
+
+
+            }
+            else {
+                navigator.notification.alert('Unable to detect your coordinates.');
+                add['lat']=0;
+                add['long']=0;
+                callback(add);
+            }
+        }
+        else {
+            navigator.notification.alert('Unable to detect your coordinates.');
+            add['lat']=0;
+            add['long']=0;
+            callback(add);
+        }
+    });
+
+};
+
+
+
 class TodoBanner extends React.Component {
     render() {
         return <div className="row">
@@ -63,13 +150,30 @@ class TodoBanner extends React.Component {
     }
 }
 
+
+class Rappel extends React.Component{
+    render () {
+        return (
+            <ReactBootstrap.FormGroup>
+                <ReactBootstrap.Radio name="radioGroup" inline>
+                    Voulez vous etre rappelé lorsque vous serez proche de la tache
+                </ReactBootstrap.Radio>
+                {' '}
+            </ReactBootstrap.FormGroup>
+        )
+    }
+}
+
 class TodoInput extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {item: '', personne: ''};
+        this.state = {item: '', personne: '', adresse:'', rappel:'false'};
 
         this.handleTaskChange = this.handleTaskChange.bind(this);
         this.handleUserChange = this.handleUserChange.bind(this);
+        this.handleAdresseChange = this.handleAdresseChange.bind(this);
+        this.handleRappelChange = this.handleRappelChange.bind(this);
+
         this.handleSubmit = this.handleSubmit.bind(this);
     }
 
@@ -80,6 +184,16 @@ class TodoInput extends React.Component {
     handleUserChange(event) {
         this.setState({personne: event.target.value});
     }
+    handleAdresseChange(event) {
+        this.setState({adresse: event.target.value});
+
+
+    }
+    handleRappelChange(event) {
+        this.setState({rappel: event.target.value});
+
+
+    }
 
     handleSubmit(event) {
         if (this.state.item.length === 0 || this.state.personne.length === 0) {
@@ -89,10 +203,10 @@ class TodoInput extends React.Component {
         else {
             event.preventDefault();
 
-            this.props.addItem(this.state.item, this.state.personne);
-
+            this.props.addItem(this.state.item, this.state.personne, this.state.adresse ,this.state.rappel);
             this.setState({item: ''});
             this.setState({personne: ''});
+            this.setState({adresse: ''});
 
             this.focusInput();
             return false;
@@ -126,9 +240,21 @@ class TodoInput extends React.Component {
                                     <input type="text" className="form-control" aria-describedby="basic-addon2"
                                            placeholder="Entrer un nom pour assigner cette tache"
                                            onChange={this.handleUserChange} value={this.state.personne} />
+
+                                </div>
+
+                                <div className="input-group">
+                                <span className="input-group-addon" key="basic-addon3"><span
+                                    className="glyphicon glyphicon-user" aria-hidden="true"/></span>
+                                    <input type="text" className="form-control" aria-describedby="basic-addon3"
+                                         placeholder="Entrer un ad pour assigner cette tache"
+                                         onChange={this.handleAdresseChange} value={this.state.adresse}  ref={(input1) => {
+                                        this.textInput = input1;
+                                    }}/>
                                 </div>
                             </div>
                         </div>
+                        <Rappel onChange={this.handleRappelChange}/>
                         <br/>
                         <div className=" col-md-offset-4 col-md-4 col-xs-offset-2 col-xs-8">
                             <button type="submit" className="btn btn-primary btn-block btn_custom shape-1  effect-4">
@@ -176,6 +302,7 @@ class TaskAction extends React.Component {
         )
     }
 }
+
 
 class TodoListItem extends React.Component {
     render() {
@@ -337,9 +464,25 @@ const TodoApp = React.createClass({
         this.setState({users: JSON.parse(users)});
     },
 
-    addItem: function (task, user) {
-        this.socket.sendAddTask({task: task, completed: false, user: user});
-        this.socket.sendAddUser({name: user});
+    addItem: function (task, user,adresse, rappel) {
+        var this_add = this;
+        getGeoCoordinates(adresse,function (adresses) {
+            if (adresses.lon != 0 && adresses.lat != 0) {
+                this_add.socket.sendAddTask({
+                    task: task,
+                    completed: false,
+                    user: user,
+                    long: adresses.long,
+                    lat: adresses.lat,
+                    rappel: rappel
+                });
+                this_add.socket.sendAddUser({name: user});
+        }
+
+
+        });
+
+
     },
 
     updateItem: function (id) {
@@ -410,6 +553,7 @@ const Router = Backbone.Router.extend({
         react.setState({nowShowingsuser: param});
     }
 });
+console.log(todoItems);
 
 const router = new Router();
 Backbone.history.start();
