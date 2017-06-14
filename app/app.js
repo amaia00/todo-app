@@ -106,37 +106,49 @@ function onError(error) {
 // Options: throw an error if no update is received every 1 seconds.
 /* TODO add parameter */
 var watchID = navigator.geolocation.watchPosition(onSuccess, onError, {timeout: 10000, enableHighAccuracy: true});
+var ACTUAL_POSITION = {};
 
-var getGeoCoordinates = function (addresse, callback) {
-    var getGeocoder = new google.maps.Geocoder();
+var getGeoCoordinates = function (addresse, rappel, useActualPosition, callback) {
     var add = {lat: '', long: ''};
+    if (rappel && !useActualPosition) {
+        var getGeocoder = new google.maps.Geocoder();
 
-    getGeocoder.geocode({'address': addresse}, function (results, status) {
-        if (status === google.maps.GeocoderStatus.OK) {
-            if (results[0]) {
-                console.debug("lot lang resultant --> ", results[0]);
-                var latitude = results[0].geometry.location.lat();
-                var longitude = results[0].geometry.location.lng();
-                add['lat'] = latitude;
-                add['long'] = longitude;
+        getGeocoder.geocode({'address': addresse}, function (results, status) {
+            if (status === google.maps.GeocoderStatus.OK) {
+                if (results[0]) {
+                    console.debug("lot lang resultant --> ", results[0]);
+                    var latitude = results[0].geometry.location.lat();
+                    var longitude = results[0].geometry.location.lng();
+                    add['lat'] = latitude;
+                    add['long'] = longitude;
 
-                console.debug("add for callback --> ", add);
-                callback(add);
+                    console.debug("add for callback --> ", add);
+                    callback(add);
+                }
+                else {
+                    navigator.notification.alert('Unable to detect your coordinates.');
+                    add['lat'] = 0;
+                    add['long'] = 0;
+
+                    add['lat'] = 0;
+                    add['long'] = 0;
+                    callback(add);
+                }
             }
             else {
-                navigator.notification.alert('Unable to detect your coordinates.');
                 add['lat'] = 0;
                 add['long'] = 0;
                 callback(add);
             }
-        }
-        else {
-            navigator.notification.alert('Unable to detect your coordinates.');
-            add['lat'] = 0;
-            add['long'] = 0;
-            callback(add);
-        }
-    });
+        });
+    } else if (rappel && useActualPosition) {
+        console.log("OKOKOKOKOK");
+        add['lat'] = ACTUAL_POSITION.lat;
+        add['long'] = ACTUAL_POSITION.long;
+        console.log("ADDD HERE", JSON.stringify(add));
+        callback(add);
+    }
+
 };
 
 
@@ -151,28 +163,63 @@ class TodoBanner extends React.Component {
     }
 }
 
+class UseActualPosition extends React.Component {
+    render() {
+        return (
+            <ReactBootstrap.FormGroup>
+                <ReactBootstrap.Checkbox name="checkPosition" inline onChange={this.props.onChange}>
+                    Voulez vous qu'on utilise votre position actuelle pour assigner à la tâche
+                </ReactBootstrap.Checkbox>
+            </ReactBootstrap.FormGroup>)
+    }
+}
+
 class Rappel extends React.Component {
     render() {
         return (
             <ReactBootstrap.FormGroup>
-                <ReactBootstrap.Radio name="radioGroup" inline>
+                <ReactBootstrap.Checkbox name="radioGroup" inline onChange={this.props.onChange}>
                     Voulez vous etre rappelé lorsque vous serez proche de la tache
-                </ReactBootstrap.Radio>
+                </ReactBootstrap.Checkbox>
                 {' '}
             </ReactBootstrap.FormGroup>
         )
     }
 }
+/*
+ *
+ *
+ navigator.geolocation.getCurrentPosition(function (position) {
+ self.setState({usePosition: {lat: position.coords.latitude,
+ long: position.coords.longitude}});
+ }, function (error) {
+ console.debug("ERROR: -> " + error);
+ }, { maximumAge: 3000, timeout: 60000,
+ enableHighAccuracy: true });
+ */
+var getCurrentPosition = navigator.geolocation.getCurrentPosition(function (position) {
+    ACTUAL_POSITION = {
+        lat: position.coords.latitude,
+        long: position.coords.longitude
+    };
+    console.log("ACTUAL POSITION: -> ", ACTUAL_POSITION.lat, ACTUAL_POSITION.long);
+}, function (error) {
+    console.debug("ERROR: -> " + error);
+}, {
+    maximumAge: 3000, timeout: 60000, enableHighAccuracy: true
+});
 
 class TodoInput extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {item: '', personne: '', adresse: '', rappel: 'false'};
+        this.state = {item: '', personne: '', adresse: '', rappel: false, useActualPosition: false};
 
+        this.disabledAddress = false;
         this.handleTaskChange = this.handleTaskChange.bind(this);
         this.handleUserChange = this.handleUserChange.bind(this);
         this.handleAdresseChange = this.handleAdresseChange.bind(this);
         this.handleRappelChange = this.handleRappelChange.bind(this);
+        this.handleUsePositionChange = this.handleUsePositionChange.bind(this);
 
         this.handleSubmit = this.handleSubmit.bind(this);
     }
@@ -190,7 +237,17 @@ class TodoInput extends React.Component {
     }
 
     handleRappelChange(event) {
-        this.setState({rappel: event.target.value});
+        this.setState({rappel: event.target.checked});
+    }
+
+    handleUsePositionChange(event) {
+        this.setState({useActualPosition: event.target.checked});
+        console.log("handleUsePositionChange ->" , event.target.value);
+        if (event.target.value)
+            this.disabledAddress = true;
+        else
+            disabledAddress = false;
+        getCurrentPosition();
     }
 
     handleSubmit(event) {
@@ -200,10 +257,13 @@ class TodoInput extends React.Component {
         } else {
             event.preventDefault();
 
-            this.props.addItem(this.state.item, this.state.personne, this.state.adresse, this.state.rappel);
-            this.setState({item: ''});
-            this.setState({personne: ''});
-            this.setState({adresse: ''});
+            console.log("addItem TODOINPUT-> ", this.state.item, this.state.personne, this.state.adresse,
+                this.state.rappel, this.state.useActualPosition);
+
+            this.props.addItem(this.state.item, this.state.personne, this.state.adresse, this.state.rappel,
+                this.state.useActualPosition);
+
+            this.setState({item: '', personne: '', adresse: ''});
 
             this.focusInput();
             return false;
@@ -236,7 +296,9 @@ class TodoInput extends React.Component {
                                     className="glyphicon glyphicon-user" aria-hidden="true"/></span>
                                     <input type="text" className="form-control" aria-describedby="basic-addon2"
                                            placeholder="Entrer un nom pour assigner cette tache"
-                                           onChange={this.handleUserChange} value={this.state.personne}/>
+                                           onChange={this.handleUserChange} value={this.state.personne}
+                                           disabled={this.disabledAddress}
+                                    />
 
                                 </div>
 
@@ -246,10 +308,11 @@ class TodoInput extends React.Component {
                                     <input type="text" className="form-control" aria-describedby="basic-addon3"
                                            placeholder="Entrer un ad pour assigner cette tache"
                                            onChange={this.handleAdresseChange} value={this.state.adresse}
-                                           />
+                                    />
                                 </div>
                             </div>
                         </div>
+                        <UseActualPosition onChange={this.handleUsePositionChange}/>
                         <Rappel onChange={this.handleRappelChange}/>
                         <br/>
                         <div className=" col-md-offset-4 col-md-4 col-xs-offset-2 col-xs-8">
@@ -328,7 +391,7 @@ class Footer_Filtered extends React.Component {
         for (let i = 0; i < this.props.users.length; i++) {
             listuser.push(<ReactBootstrap.MenuItem className="listes_users" key={i + this.props.users[i].name}
                                                    eventKey={i}
-                                                   href={"/#/" + this.props.special + "user/" + this.props.users[i].name}>{this.props.users[i].name}</ReactBootstrap.MenuItem>);
+                                                   href={"#/" + this.props.special + "user/" + this.props.users[i].name}>{this.props.users[i].name}</ReactBootstrap.MenuItem>);
         }
         return <div> {listuser}</div>
     }
@@ -342,7 +405,7 @@ class Footer extends React.Component {
                 className={classNames({selected: this.props.nowShowing === apps.ALL_TODOS})} key="list1">
                 <ReactBootstrap.DropdownButton bsSize="large" title=" All" key="list_user" id="dropdown-size-large">
                     <ReactBootstrap.MenuItem value="all" key="All" eventKey="All"
-                                             href="/#/">all</ReactBootstrap.MenuItem>
+                                             href="#/">all</ReactBootstrap.MenuItem>
                     <Footer_Filtered special="" users={this.props.users}/>
                 </ReactBootstrap.DropdownButton>
 
@@ -352,7 +415,7 @@ class Footer extends React.Component {
                     <ReactBootstrap.DropdownButton bsSize="large" title="Active" key="list_user"
                                                    id="dropdown-size-large">
                         <ReactBootstrap.MenuItem key="Active" value="active" eventKey="Active"
-                                                 href="/#/active">all</ReactBootstrap.MenuItem>
+                                                 href="#/active">all</ReactBootstrap.MenuItem>
                         <Footer_Filtered special="active/" users={this.props.users}/>
                     </ReactBootstrap.DropdownButton>
 
@@ -361,7 +424,7 @@ class Footer extends React.Component {
                     <ReactBootstrap.DropdownButton bsSize="large" title=" Completed" key="list_user"
                                                    id="dropdown-size-large">
                         <ReactBootstrap.MenuItem key="Completed" value="completed" eventKey="Completed"
-                                                 href="/#/completed">all</ReactBootstrap.MenuItem>
+                                                 href="#/completed">all</ReactBootstrap.MenuItem>
                         <Footer_Filtered special="completed/" users={this.props.users}/>
                     </ReactBootstrap.DropdownButton>
                 </ReactBootstrap.ButtonToolbar>
@@ -373,12 +436,12 @@ class Footer extends React.Component {
 class Message extends React.Component {
     constructor() {
         super();
-        this.state = {msg: ''};
+        //this.state = {msg: this.props.msg};
     }
 
     render() {
         if (this.props.message.length !== 0)
-            return <p class="text-info">{this.props.message}</p>
+            return <p className="text-info">{this.props.message}</p>
         else
             return <p/>
     }
@@ -448,12 +511,50 @@ class TodoList extends React.Component {
         return <h1/>
     }
 }
+class HeaderMeu extends React.Component {
+    render() {
+
+        return (
+            <ReactBootstrap.Navbar inverse collapseOnSelect className="navbar-fixed-top">
+                <ReactBootstrap.Navbar.Header>
+                    <ReactBootstrap.Navbar.Brand>
+                        <a href="#">Todo Mobile</a>
+                    </ReactBootstrap.Navbar.Brand>
+                    <ReactBootstrap.Navbar.Toggle />
+                </ReactBootstrap.Navbar.Header>
+                <ReactBootstrap.Navbar.Collapse>
+                    <ReactBootstrap.Nav>
+                        <ReactBootstrap.NavDropdown eventKey={3} title="All" id="basic-nav-dropdown">
+                            <ReactBootstrap.MenuItem value="all" key="All" eventKey="All"
+                                                     href="#">ALL</ReactBootstrap.MenuItem>
+                            <Footer_Filtered special="" users={this.props.users}/>
+                        </ReactBootstrap.NavDropdown>
+                        <ReactBootstrap.NavDropdown eventKey={3} title="Active" id="basic-nav-dropdown1">
+                            <ReactBootstrap.MenuItem value="active" key="active" eventKey="acrtive"
+                                                     href="#/active">ALL</ReactBootstrap.MenuItem>
+                            <Footer_Filtered special="active/" users={this.props.users}/>
+                        </ReactBootstrap.NavDropdown>
+                        <ReactBootstrap.NavDropdown eventKey={3} title="Completed" id="basic-nav-dropdown2">
+                            <ReactBootstrap.MenuItem value="completed" key="completed" eventKey="completed"
+                                                     href="#/completed">ALL</ReactBootstrap.MenuItem>
+                            <Footer_Filtered special="completed/" users={this.props.users}/>
+                        </ReactBootstrap.NavDropdown>
+                    </ReactBootstrap.Nav>
+                </ReactBootstrap.Navbar.Collapse>
+            </ReactBootstrap.Navbar>
+
+        );
+
+    }
+
+
+}
 
 const TodoApp = React.createClass({
     mixins: [backboneMixin],
 
     componentWillMount: function () {
-        this.setState({'users': this.props.users});
+        this.setState({'users': this.props.users, 'msg': ''});
         EVENT.reload.on('tasks', this.loadItems, this);
         EVENT.reload.on('users', this.loadUsers, this);
         EVENT.reload.on('close-tasks', this.tasksClose, this);
@@ -464,7 +565,6 @@ const TodoApp = React.createClass({
 
         if (obj.close) {
             this.setState({msg: "Le tâche " + obj.id + " est proche."});
-
             navigator.vibrate(1000);
             console.log("tache close detecte!");
         }
@@ -485,31 +585,33 @@ const TodoApp = React.createClass({
         this.setState({users: JSON.parse(users)});
     },
 
-    addItem: function (task, user, adresse, rappel) {
-        var this_add = this;
+    addItem: function (task, user, address, rappel, useActualPosition) {
+        var self = this;
+        console.log("addItem TODOAPP --> ", task, user, address, rappel, useActualPosition);
+        this.setState({msg: ''});
 
-        getGeoCoordinates(adresse, function (adresses) {
-            if (adresses.lon !== 0 && adresses.lat !== 0) {
-                console.debug("INFO send to add TASK socket ");
-                this_add.socket.sendAddTask({
-                    task: task,
-                    completed: false,
-                    user: user,
-                    long: adresses.long,
-                    lat: adresses.lat,
-                    rappel: rappel
-                });
-                console.debug("INFO send to add USER socket ");
-                this_add.socket.sendAddUser({name: user});
-            }
+        getGeoCoordinates(address, rappel, useActualPosition, function (adresses) {
+            console.debug("INFO send to add TASK socket ");
+            self.socket.sendAddTask({
+                task: task,
+                completed: false,
+                user: user,
+                long: adresses.long || null,
+                lat: adresses.lat || null,
+                rappel: rappel
+            });
+            console.debug("INFO send to add USER socket ");
+            self.socket.sendAddUser({name: user});
         });
     },
 
     updateItem: function (id) {
+        this.setState({msg: ''});
         this.socket.sendUpdateTask({id: id});
     },
 
     removeItem: function (idTask) {
+        this.setState({msg: ''});
         const item = this.state.collection.filter(function (item) {
             return item.id === idTask;
         })[0];
@@ -519,6 +621,7 @@ const TodoApp = React.createClass({
 
     render: function () {
         return <div><img className="image_class" src="/images/todo-list.jpg"/>
+            <HeaderMeu users={this.state.users}/>
             <TodoBanner qtyTodos={this.state.collection.length}/>
             <TodoInput addItem={this.addItem}/>
             <Message message={this.state.msg}/>
@@ -574,7 +677,6 @@ const Router = Backbone.Router.extend({
         react.setState({nowShowingsuser: param});
     }
 });
-console.log(todoItems);
 
 const router = new Router();
 Backbone.history.start();

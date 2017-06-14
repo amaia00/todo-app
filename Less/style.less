@@ -37,8 +37,16 @@
   margin: 10px auto;
   box-shadow: 1px 1px 10px  @black;
 }
+
+#todo {
+  position: relative;
+
+}
 body {
   background:@green ;
+  a {
+    color : inherit;
+  }
   h4 {
     font-size: 35px;
     text-align: center;
@@ -121,6 +129,9 @@ body {
 
 
   }
+  .navbar.navbar-inverse {
+    display: none;
+  }
   .filter {
     text-align: center;
     margin-bottom: 20px;
@@ -190,4 +201,43 @@ body {
       background: transparent;
   }
 }
+@media screen and (max-width: 600px) {
+  .btn_custom {
+    font-size: 12px;
+    span {
+      display: none;
+    }
+  }
+  .navbar-inverse .navbar-brand {
+    color: @white;
+  }
 
+    .navbar.navbar-inverse {
+      display: block !important;
+      li {
+        padding-left: 25px;
+        a {
+          color: #9d9d9d;
+          &:hover {
+            color: @white;
+          }
+        }
+      }
+  }
+  .image_class {
+    display: none;
+  }
+  .list_todo {
+    .filter {
+      display: none;
+    }
+  }
+  body {
+
+    .formulaire {
+      margin: 0 auto;
+      margin-bottom: 10px;
+    }
+  }
+
+}
