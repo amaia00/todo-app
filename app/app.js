@@ -32,7 +32,7 @@ const taskModel = Backbone.Model.extend({
         task: '',
         user: '',
         completed: false,
-        lon:'',
+        lon: '',
         lat: '',
         rappel: ''
     },
@@ -63,32 +63,35 @@ const users = new Backbone.Collection({
 users.set([]);
 
 /*var onSuccess = function(position) {
-    console.log('Latitude: '          + position.coords.latitude          + '\n' +
-        'Longitude: '         + position.coords.longitude         + '\n' +
-        'Altitude: '          + position.coords.altitude          + '\n' +
-        'Accuracy: '          + position.coords.accuracy          + '\n' +
-        'Altitude Accuracy: ' + position.coords.altitudeAccuracy  + '\n' +
-        'Heading: '           + position.coords.heading           + '\n' +
-        'Speed: '             + position.coords.speed             + '\n' +
-        'Timestamp: '         + position.timestamp                + '\n');
-};
+ console.log('Latitude: '          + position.coords.latitude          + '\n' +
+ 'Longitude: '         + position.coords.longitude         + '\n' +
+ 'Altitude: '          + position.coords.altitude          + '\n' +
+ 'Accuracy: '          + position.coords.accuracy          + '\n' +
+ 'Altitude Accuracy: ' + position.coords.altitudeAccuracy  + '\n' +
+ 'Heading: '           + position.coords.heading           + '\n' +
+ 'Speed: '             + position.coords.speed             + '\n' +
+ 'Timestamp: '         + position.timestamp                + '\n');
+ };
 
-function onError(error) {
-    console.log('code: '    + error.code    + '\n' +
-        'message: ' + error.message + '\n');
-}
+ function onError(error) {
+ console.log('code: '    + error.code    + '\n' +
+ 'message: ' + error.message + '\n');
+ }
 
-navigator.geolocation.getCurrentPosition(onSuccess, onError, { maximumAge: 3000, timeout: 60000, enableHighAccuracy: true });*/
+ navigator.geolocation.getCurrentPosition(onSuccess, onError, { maximumAge: 3000, timeout: 60000, enableHighAccuracy: true });*/
 
 // onSuccess Callback
 //   This method accepts a `Position` object, which contains
 //   the current GPS coordinates
 //
+
 function onSuccess(position) {
+    console.debug("onSuccess:");
     var info = [];
     info.push(position.coords.latitude);
-    info.push(position.coords.longitude)
-
+    info.push(position.coords.longitude);
+    console.debug("onSuccess: checkCloseTask --> ", position.coords.latitude, position.coords.longitude);
+    SocketClient.checkCloseTask(position.coords.latitude, position.coords.longitude);
 
     return info;
 }
@@ -96,47 +99,45 @@ function onSuccess(position) {
 // onError Callback receives a PositionError object
 //
 function onError(error) {
-    console.log('code: '    + error.code    + '\n' +
+    console.debug('Error: code: ' + error.code + '\n' +
         'message: ' + error.message + '\n');
 }
 
-// Options: throw an error if no update is received every 30 seconds.
-//
-var watchID = navigator.geolocation.watchPosition(onSuccess, onError, { timeout: 300000 });
+// Options: throw an error if no update is received every 1 seconds.
+/* TODO add parameter */
+var watchID = navigator.geolocation.watchPosition(onSuccess, onError, {timeout: 10000, enableHighAccuracy: true});
 
-
-var getGeoCoordinates = function GetGeoCoordinates(addresse, callback){
+var getGeoCoordinates = function (addresse, callback) {
     var getGeocoder = new google.maps.Geocoder();
-    var add = {lat:'', long: ''};
-    getGeocoder.geocode( { 'address': addresse}, function(results, status) {
-        if (status == google.maps.GeocoderStatus.OK) {
+    var add = {lat: '', long: ''};
+
+    getGeocoder.geocode({'address': addresse}, function (results, status) {
+        if (status === google.maps.GeocoderStatus.OK) {
             if (results[0]) {
+                console.debug("lot lang resultant --> ", results[0]);
                 var latitude = results[0].geometry.location.lat();
                 var longitude = results[0].geometry.location.lng();
-                add['lat']=latitude;
-                add['long']=longitude;
-                    callback(add);
+                add['lat'] = latitude;
+                add['long'] = longitude;
 
-
-
+                console.debug("add for callback --> ", add);
+                callback(add);
             }
             else {
                 navigator.notification.alert('Unable to detect your coordinates.');
-                add['lat']=0;
-                add['long']=0;
+                add['lat'] = 0;
+                add['long'] = 0;
                 callback(add);
             }
         }
         else {
             navigator.notification.alert('Unable to detect your coordinates.');
-            add['lat']=0;
-            add['long']=0;
+            add['lat'] = 0;
+            add['long'] = 0;
             callback(add);
         }
     });
-
 };
-
 
 
 class TodoBanner extends React.Component {
@@ -150,9 +151,8 @@ class TodoBanner extends React.Component {
     }
 }
 
-
-class Rappel extends React.Component{
-    render () {
+class Rappel extends React.Component {
+    render() {
         return (
             <ReactBootstrap.FormGroup>
                 <ReactBootstrap.Radio name="radioGroup" inline>
@@ -167,7 +167,7 @@ class Rappel extends React.Component{
 class TodoInput extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {item: '', personne: '', adresse:'', rappel:'false'};
+        this.state = {item: '', personne: '', adresse: '', rappel: 'false'};
 
         this.handleTaskChange = this.handleTaskChange.bind(this);
         this.handleUserChange = this.handleUserChange.bind(this);
@@ -184,26 +184,23 @@ class TodoInput extends React.Component {
     handleUserChange(event) {
         this.setState({personne: event.target.value});
     }
+
     handleAdresseChange(event) {
         this.setState({adresse: event.target.value});
-
-
     }
+
     handleRappelChange(event) {
         this.setState({rappel: event.target.value});
-
-
     }
 
     handleSubmit(event) {
         if (this.state.item.length === 0 || this.state.personne.length === 0) {
             event.preventDefault();
             return false;
-        }
-        else {
+        } else {
             event.preventDefault();
 
-            this.props.addItem(this.state.item, this.state.personne, this.state.adresse ,this.state.rappel);
+            this.props.addItem(this.state.item, this.state.personne, this.state.adresse, this.state.rappel);
             this.setState({item: ''});
             this.setState({personne: ''});
             this.setState({adresse: ''});
@@ -239,7 +236,7 @@ class TodoInput extends React.Component {
                                     className="glyphicon glyphicon-user" aria-hidden="true"/></span>
                                     <input type="text" className="form-control" aria-describedby="basic-addon2"
                                            placeholder="Entrer un nom pour assigner cette tache"
-                                           onChange={this.handleUserChange} value={this.state.personne} />
+                                           onChange={this.handleUserChange} value={this.state.personne}/>
 
                                 </div>
 
@@ -247,10 +244,9 @@ class TodoInput extends React.Component {
                                 <span className="input-group-addon" key="basic-addon3"><span
                                     className="glyphicon glyphicon-user" aria-hidden="true"/></span>
                                     <input type="text" className="form-control" aria-describedby="basic-addon3"
-                                         placeholder="Entrer un ad pour assigner cette tache"
-                                         onChange={this.handleAdresseChange} value={this.state.adresse}  ref={(input1) => {
-                                        this.textInput = input1;
-                                    }}/>
+                                           placeholder="Entrer un ad pour assigner cette tache"
+                                           onChange={this.handleAdresseChange} value={this.state.adresse}
+                                           />
                                 </div>
                             </div>
                         </div>
@@ -302,7 +298,6 @@ class TaskAction extends React.Component {
         )
     }
 }
-
 
 class TodoListItem extends React.Component {
     render() {
@@ -369,9 +364,23 @@ class Footer extends React.Component {
                                                  href="/#/completed">all</ReactBootstrap.MenuItem>
                         <Footer_Filtered special="completed/" users={this.props.users}/>
                     </ReactBootstrap.DropdownButton>
-
-                </ReactBootstrap.ButtonToolbar></div>
+                </ReactBootstrap.ButtonToolbar>
+            </div>
         );
+    }
+}
+
+class Message extends React.Component {
+    constructor() {
+        super();
+        this.state = {msg: ''};
+    }
+
+    render() {
+        if (this.props.message.length !== 0)
+            return <p class="text-info">{this.props.message}</p>
+        else
+            return <p/>
     }
 }
 
@@ -447,6 +456,18 @@ const TodoApp = React.createClass({
         this.setState({'users': this.props.users});
         EVENT.reload.on('tasks', this.loadItems, this);
         EVENT.reload.on('users', this.loadUsers, this);
+        EVENT.reload.on('close-tasks', this.tasksClose, this);
+    },
+
+    tasksClose: function (obj) {
+        obj = JSON.parse(obj);
+
+        if (obj.close) {
+            this.setState({msg: "Le tâche " + obj.id + " est proche."});
+
+            navigator.vibrate(1000);
+            console.log("tache close detecte!");
+        }
     },
 
     componentDidMount: function () {
@@ -464,10 +485,12 @@ const TodoApp = React.createClass({
         this.setState({users: JSON.parse(users)});
     },
 
-    addItem: function (task, user,adresse, rappel) {
+    addItem: function (task, user, adresse, rappel) {
         var this_add = this;
-        getGeoCoordinates(adresse,function (adresses) {
-            if (adresses.lon != 0 && adresses.lat != 0) {
+
+        getGeoCoordinates(adresse, function (adresses) {
+            if (adresses.lon !== 0 && adresses.lat !== 0) {
+                console.debug("INFO send to add TASK socket ");
                 this_add.socket.sendAddTask({
                     task: task,
                     completed: false,
@@ -476,13 +499,10 @@ const TodoApp = React.createClass({
                     lat: adresses.lat,
                     rappel: rappel
                 });
+                console.debug("INFO send to add USER socket ");
                 this_add.socket.sendAddUser({name: user});
-        }
-
-
+            }
         });
-
-
     },
 
     updateItem: function (id) {
@@ -490,7 +510,7 @@ const TodoApp = React.createClass({
     },
 
     removeItem: function (idTask) {
-        const item = this.state.collection.filter(function(item) {
+        const item = this.state.collection.filter(function (item) {
             return item.id === idTask;
         })[0];
         this.socket.sendRemoveTask({id: idTask});
@@ -500,16 +520,17 @@ const TodoApp = React.createClass({
     render: function () {
         return <div><img className="image_class" src="/images/todo-list.jpg"/>
             <TodoBanner qtyTodos={this.state.collection.length}/>
-            <TodoInput addItem={this.addItem} />
+            <TodoInput addItem={this.addItem}/>
+            <Message message={this.state.msg}/>
             <TodoList nowShowing={this.state.nowShowing} nowShowingsuser={this.state.nowShowingsuser}
                       listetodos={this.state.collection} updateItem={this.updateItem}
-                      removeItem={this.removeItem} users={this.state.users} />
+                      removeItem={this.removeItem} users={this.state.users}/>
         </div>;
     }
 });
 
 const react = ReactDOM.render(<TodoApp name="todo-app" collection={todoItems} users={users.models}/>,
-        document.getElementById('todo'));
+    document.getElementById('todo'));
 const Router = Backbone.Router.extend({
 
     routes: {

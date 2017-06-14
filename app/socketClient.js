@@ -1,13 +1,15 @@
+'use strict';
+
 /**
  * Created by amaia.nazabal on 6/10/17.
  */
 // TODO addTask port to config
-const wssUrl = "ws://localhost:3002";
+var wssUrl = "ws://10.0.2.2:3002";
 
 var socket;
 var EVENT = EVENT || {};
 
-const cmd = {
+var cmd = {
     getTasks: '/getAllTask ',
     addTask: '/addTask ',
     updateTask: '/updateTask ',
@@ -16,26 +18,27 @@ const cmd = {
     addUser: '/addUser ',
     removeUser: '/removeUser ',
     disconnect: '/disconnect ',
-    broadcast: '/broadcast '
+    broadcast: '/broadcast ',
+    checkIfClose: '/checkIfClose '
 };
 
-let SocketClient = {
+var SocketClient = {
 
     socket: null,
     tasks: [],
 
-    init: function() {
+    init: function init() {
 
         socket = new WebSocket(wssUrl);
 
-        socket.onopen = function(){
+        socket.onopen = function () {
             socket.send(cmd.getTasks);
         };
 
         socket.onmessage = function (evt) {
-            let cmd;
-            let param = evt.data;
-            if(evt.data.indexOf('/') === 0){
+            var cmd = void 0;
+            var param = evt.data;
+            if (evt.data.indexOf('/') === 0) {
                 cmd = evt.data.split(' ')[0];
                 param = evt.data.replace(cmd, '');
             }
@@ -43,45 +46,47 @@ let SocketClient = {
             if (cmd === '/tasksList') {
                 EVENT.reload.trigger('tasks', param);
                 SocketClient.getAllUsers();
-            }else if (cmd === '/usersList') {
+            } else if (cmd === '/usersList') {
                 EVENT.reload.trigger('users', param);
+            } else if (cmd === '/closeOfTask') {
+                EVENT.reload.trigger('close-tasks', param);
             }
         };
 
-        socket.onclose = function() {
-            console.debug("Connection fermé.")
+        socket.onclose = function () {
+            console.debug("Connection fermé.");
         };
     },
 
-    sendAddTask: function(msg){
+    sendAddTask: function sendAddTask(msg) {
         socket.send(cmd.addTask + JSON.stringify(msg));
     },
 
-    sendAddUser: function(msg){
+    sendAddUser: function sendAddUser(msg) {
         socket.send(cmd.addUser + JSON.stringify(msg));
     },
 
-    sendUpdateTask: function(msg){
+    sendUpdateTask: function sendUpdateTask(msg) {
         socket.send(cmd.updateTask + JSON.stringify(msg));
     },
 
-    sendRemoveTask: function(msg){
+    sendRemoveTask: function sendRemoveTask(msg) {
         socket.send(cmd.removeTask + JSON.stringify(msg));
     },
 
-    sendRemoveUser: function (msg) {
+    sendRemoveUser: function sendRemoveUser(msg) {
         socket.send(cmd.removeUser + JSON.stringify(msg));
     },
 
-    getAllTasks: function() {
+    getAllTasks: function getAllTasks() {
         try {
             socket.send(cmd.getTasks);
         } catch (e) {
             console.debug("Error websocket msg: getAllTasks: " + e.message);
         }
     },
-    
-    getAllUsers: function () {
+
+    getAllUsers: function getAllUsers() {
         try {
             socket.send(cmd.getUsers);
         } catch (e) {
@@ -89,8 +94,14 @@ let SocketClient = {
         }
     },
 
-    close: function(){
-        socket.close();
-    }
-};
+    checkCloseTask: function (lat, long) {
+        try {
+            socket.send(cmd.checkIfClose + JSON.stringify({lat: lat, long: long}));
+        } catch (e) {}
+    },
 
+
+    close: function close() {
+        socket.close();
+    },
+};

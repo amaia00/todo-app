@@ -10,9 +10,13 @@ exports.wss = new WebSocketServer({host: '0.0.0.0', port: 3002});
 exports.OPEN = 1;
 exports.ID_TASKS = 0;
 
+var DISTANCE_PARAM = 500;
+var RADIUS_EARTH = 6371;
+
 exports.config = {
     tasks: [],
     users: [],
+
     run: function () {
         exports.wss.on('connection', function (ws) {
             ws.on('message', function (message) {
@@ -29,8 +33,6 @@ exports.config = {
 
     dispatch: function (ws, message) {
         try {
-
-
             var cmd = '';
             var param = '';
 
@@ -80,6 +82,15 @@ exports.config = {
                 case '/getAllUser':
                     exports.config.userList();
                     break;
+
+                case '/checkIfClose':
+                    msg = param.replace(' ', '');
+                    if (msg !== '') {
+                        console.log("param", param);
+                        exports.config.checkCloseOfTask(msg);
+                    }
+                    break;
+
                 default:
                     break;
             }
@@ -132,6 +143,7 @@ exports.config = {
         var userTasks = this.tasks.find(function (item) {
             return item.user === user.name;
         });
+
         if (typeof userTasks === "undefined" || userTasks.length === 0)
             this.users = this.users.filter(function (item) {
                 return item.name !== user.name;
@@ -155,6 +167,32 @@ exports.config = {
             }
         });
     },
+    //https://stackoverflow.com/questions/28542133/i-cannot-get-the-same-accuracy-as-google-maps-when-it-comes-to-distance/28543001#28543001
+    //calcule la distance en metres
+    checkCloseOfTask: function (coordinates) {
+        var close = false;
+        var taskID = -1;
 
+        coordinates = JSON.parse(coordinates);
 
+        this.tasks.forEach(function (task) {
+            if (!task.completed) {
+                var lat1 = task.lat;
+                var long1 = task.long;
+                var dLat = (coordinates.lat - lat1) * Math.PI / 180;
+                var dLon = (coordinates.long - long1) * Math.PI / 180;
+
+                var a = 0.5 - Math.cos(dLat) / 2 + Math.cos(lat1 * Math.PI / 180) *
+                    Math.cos(coordinates.lat * Math.PI / 180) *  (1 - Math.cos(dLon)) / 2;
+                var d = Math.round(RADIUS_EARTH * 1000 * 2 * Math.asin(Math.sqrt(a)));
+
+                if (d <= DISTANCE_PARAM) {
+                    close = true;
+                    taskID = task.id;
+                }
+            }
+        });
+
+        exports.config.broadcastCommand('/closeOfTask ' + JSON.stringify({close: close, id: taskID}));
+    }
 };
