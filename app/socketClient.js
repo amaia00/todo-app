@@ -4,7 +4,7 @@
  * Created by amaia.nazabal on 6/10/17.
  */
 
-var wssUrl = "ws://10.0.2.2:3002";
+var wssUrl = "ws://0.0.0.0:3002";
 
 var socket;
 var EVENT = EVENT || {};

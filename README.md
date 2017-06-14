@@ -111,7 +111,7 @@ Modifier le fichier `socketClient.js` qui se trouve dans le dossier `app/` pour 
 Dans le cas de vouloir tester l'application dans le navigateur c'est suffisant de mettre `localhost`.
 
 ```javascript
-var wssUrl = "ws://10.0.2.2:3002";
+var wssUrl = "ws://<IP>:3002";
 ```
 
 Executer les commandes suivantes:
@@ -130,3 +130,7 @@ avec les routes changés et les fichiers `bundle.js` et `socketClient.js` dans l
 > cd cordova_project/
 > cordova run android
 ```
+
+##### Configurations
+Pour changer le port du webSocket, c'est suffisant de modifier le fichier `socketServer.js` dans la ligne 8, et le 
+fichier `socketClient.js` dans la ligne 7.
