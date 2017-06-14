@@ -16,13 +16,6 @@ apps.ALL_TODOS = 'all';
 apps.ACTIVE_TODOS = 'active';
 apps.COMPLETED_TODOS = 'completed';
 
-/**
- * dlon = lon2 - lon1
- dlat = lat2 - lat1
- a = (sin(dlat/2))^2 + cos(lat1) * cos(lat2) * (sin(dlon/2))^2
- c = 2 * atan2( sqrt(a), sqrt(1-a) )
- d = R * c (where R is the radius of the Earth)
- */
 
 EVENT.reload = underscore.extend({}, Backbone.Events);
 
@@ -62,44 +55,18 @@ const users = new Backbone.Collection({
 });
 users.set([]);
 
-/*var onSuccess = function(position) {
- console.log('Latitude: '          + position.coords.latitude          + '\n' +
- 'Longitude: '         + position.coords.longitude         + '\n' +
- 'Altitude: '          + position.coords.altitude          + '\n' +
- 'Accuracy: '          + position.coords.accuracy          + '\n' +
- 'Altitude Accuracy: ' + position.coords.altitudeAccuracy  + '\n' +
- 'Heading: '           + position.coords.heading           + '\n' +
- 'Speed: '             + position.coords.speed             + '\n' +
- 'Timestamp: '         + position.timestamp                + '\n');
- };
-
- function onError(error) {
- console.log('code: '    + error.code    + '\n' +
- 'message: ' + error.message + '\n');
- }
-
- navigator.geolocation.getCurrentPosition(onSuccess, onError, { maximumAge: 3000, timeout: 60000, enableHighAccuracy: true });*/
-
-// onSuccess Callback
-//   This method accepts a `Position` object, which contains
-//   the current GPS coordinates
-//
-
 function onSuccess(position) {
-    console.debug("onSuccess:");
     var info = [];
     info.push(position.coords.latitude);
     info.push(position.coords.longitude);
-    console.debug("onSuccess: checkCloseTask --> ", position.coords.latitude, position.coords.longitude);
+
     SocketClient.checkCloseTask(position.coords.latitude, position.coords.longitude);
 
     return info;
 }
 
-// onError Callback receives a PositionError object
-//
 function onError(error) {
-    console.debug('Error: code: ' + error.code + '\n' +
+    console.debug('code: ' + error.code + '\n' +
         'message: ' + error.message + '\n');
 }
 
@@ -116,13 +83,12 @@ var getGeoCoordinates = function (addresse, rappel, useActualPosition, callback)
         getGeocoder.geocode({'address': addresse}, function (results, status) {
             if (status === google.maps.GeocoderStatus.OK) {
                 if (results[0]) {
-                    console.debug("lot lang resultant --> ", results[0]);
+
                     var latitude = results[0].geometry.location.lat();
                     var longitude = results[0].geometry.location.lng();
                     add['lat'] = latitude;
                     add['long'] = longitude;
 
-                    console.debug("add for callback --> ", add);
                     callback(add);
                 }
                 else {
@@ -142,10 +108,9 @@ var getGeoCoordinates = function (addresse, rappel, useActualPosition, callback)
             }
         });
     } else if (rappel && useActualPosition) {
-        console.log("OKOKOKOKOK");
         add['lat'] = ACTUAL_POSITION.lat;
         add['long'] = ACTUAL_POSITION.long;
-        console.log("ADDD HERE", JSON.stringify(add));
+
         callback(add);
     }
 
@@ -186,25 +151,14 @@ class Rappel extends React.Component {
         )
     }
 }
-/*
- *
- *
- navigator.geolocation.getCurrentPosition(function (position) {
- self.setState({usePosition: {lat: position.coords.latitude,
- long: position.coords.longitude}});
- }, function (error) {
- console.debug("ERROR: -> " + error);
- }, { maximumAge: 3000, timeout: 60000,
- enableHighAccuracy: true });
- */
+
 var getCurrentPosition = navigator.geolocation.getCurrentPosition(function (position) {
     ACTUAL_POSITION = {
         lat: position.coords.latitude,
         long: position.coords.longitude
     };
-    console.log("ACTUAL POSITION: -> ", ACTUAL_POSITION.lat, ACTUAL_POSITION.long);
 }, function (error) {
-    console.debug("ERROR: -> " + error);
+    console.debug(error);
 }, {
     maximumAge: 3000, timeout: 60000, enableHighAccuracy: true
 });
@@ -242,7 +196,6 @@ class TodoInput extends React.Component {
 
     handleUsePositionChange(event) {
         this.setState({useActualPosition: event.target.checked});
-        console.log("handleUsePositionChange ->" , event.target.value);
         if (event.target.value)
             this.disabledAddress = true;
         else
@@ -256,10 +209,6 @@ class TodoInput extends React.Component {
             return false;
         } else {
             event.preventDefault();
-
-            console.log("addItem TODOINPUT-> ", this.state.item, this.state.personne, this.state.adresse,
-                this.state.rappel, this.state.useActualPosition);
-
             this.props.addItem(this.state.item, this.state.personne, this.state.adresse, this.state.rappel,
                 this.state.useActualPosition);
 
@@ -566,7 +515,6 @@ const TodoApp = React.createClass({
         if (obj.close) {
             this.setState({msg: "Le tâche " + obj.id + " est proche."});
             navigator.vibrate(1000);
-            console.log("tache close detecte!");
         }
     },
 
@@ -587,11 +535,9 @@ const TodoApp = React.createClass({
 
     addItem: function (task, user, address, rappel, useActualPosition) {
         var self = this;
-        console.log("addItem TODOAPP --> ", task, user, address, rappel, useActualPosition);
         this.setState({msg: ''});
 
         getGeoCoordinates(address, rappel, useActualPosition, function (adresses) {
-            console.debug("INFO send to add TASK socket ");
             self.socket.sendAddTask({
                 task: task,
                 completed: false,
@@ -600,7 +546,7 @@ const TodoApp = React.createClass({
                 lat: adresses.lat || null,
                 rappel: rappel
             });
-            console.debug("INFO send to add USER socket ");
+
             self.socket.sendAddUser({name: user});
         });
     },
