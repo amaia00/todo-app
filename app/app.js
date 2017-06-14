@@ -11,11 +11,9 @@ var classNames = require('classnames');
 var ReactBootstrap = require('react-bootstrap');
 var apps = apps || {};
 
-
 apps.ALL_TODOS = 'all';
 apps.ACTIVE_TODOS = 'active';
 apps.COMPLETED_TODOS = 'completed';
-
 
 EVENT.reload = underscore.extend({}, Backbone.Events);
 
