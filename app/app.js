@@ -9,6 +9,7 @@ var backboneMixin = require('backbone-react-component');
 var underscore = require('underscore');
 var classNames = require('classnames');
 var ReactBootstrap = require('react-bootstrap');
+var NavbarMenu = require('react-bootstrap-navbar');
 var apps = apps || {};
 
 
@@ -121,14 +122,13 @@ var getGeoCoordinates = function GetGeoCoordinates(addresse, callback){
 
             }
             else {
-                navigator.notification.alert('Unable to detect your coordinates.');
+
                 add['lat']=0;
                 add['long']=0;
                 callback(add);
             }
         }
         else {
-            navigator.notification.alert('Unable to detect your coordinates.');
             add['lat']=0;
             add['long']=0;
             callback(add);
@@ -136,8 +136,6 @@ var getGeoCoordinates = function GetGeoCoordinates(addresse, callback){
     });
 
 };
-
-
 
 class TodoBanner extends React.Component {
     render() {
@@ -333,7 +331,7 @@ class Footer_Filtered extends React.Component {
         for (let i = 0; i < this.props.users.length; i++) {
             listuser.push(<ReactBootstrap.MenuItem className="listes_users" key={i + this.props.users[i].name}
                                                    eventKey={i}
-                                                   href={"/#/" + this.props.special + "user/" + this.props.users[i].name}>{this.props.users[i].name}</ReactBootstrap.MenuItem>);
+                                                   href={"#/" + this.props.special + "user/" + this.props.users[i].name}>{this.props.users[i].name}</ReactBootstrap.MenuItem>);
         }
         return <div> {listuser}</div>
     }
@@ -347,7 +345,7 @@ class Footer extends React.Component {
                 className={classNames({selected: this.props.nowShowing === apps.ALL_TODOS})} key="list1">
                 <ReactBootstrap.DropdownButton bsSize="large" title=" All" key="list_user" id="dropdown-size-large">
                     <ReactBootstrap.MenuItem value="all" key="All" eventKey="All"
-                                             href="/#/">all</ReactBootstrap.MenuItem>
+                                             href="#/">all</ReactBootstrap.MenuItem>
                     <Footer_Filtered special="" users={this.props.users}/>
                 </ReactBootstrap.DropdownButton>
 
@@ -357,7 +355,7 @@ class Footer extends React.Component {
                     <ReactBootstrap.DropdownButton bsSize="large" title="Active" key="list_user"
                                                    id="dropdown-size-large">
                         <ReactBootstrap.MenuItem key="Active" value="active" eventKey="Active"
-                                                 href="/#/active">all</ReactBootstrap.MenuItem>
+                                                 href="#/active">all</ReactBootstrap.MenuItem>
                         <Footer_Filtered special="active/" users={this.props.users}/>
                     </ReactBootstrap.DropdownButton>
 
@@ -366,7 +364,7 @@ class Footer extends React.Component {
                     <ReactBootstrap.DropdownButton bsSize="large" title=" Completed" key="list_user"
                                                    id="dropdown-size-large">
                         <ReactBootstrap.MenuItem key="Completed" value="completed" eventKey="Completed"
-                                                 href="/#/completed">all</ReactBootstrap.MenuItem>
+                                                 href="#/completed">all</ReactBootstrap.MenuItem>
                         <Footer_Filtered special="completed/" users={this.props.users}/>
                     </ReactBootstrap.DropdownButton>
 
@@ -424,6 +422,7 @@ class TodoList extends React.Component {
                 listitem.push(<TodoListItem key={listetodos.id} item={listetodos}
                                             updateItem={props.updateItem}
                                             removeItem={props.removeItem}/>);
+                console.log(listitem);
 
                 return (
                     listitem
@@ -438,9 +437,46 @@ class TodoList extends React.Component {
         }
         return <h1/>
     }
+}class HeaderMeu extends React.Component {
+    render() {
+
+        return (
+            <ReactBootstrap.Navbar inverse collapseOnSelect className = "navbar-fixed-top">
+                <ReactBootstrap.Navbar.Header>
+                    <ReactBootstrap.Navbar.Brand>
+                        <a href="#">Todo Mobile</a>
+                    </ReactBootstrap.Navbar.Brand>
+                    <ReactBootstrap.Navbar.Toggle />
+                </ReactBootstrap.Navbar.Header>
+                <ReactBootstrap.Navbar.Collapse>
+                    <ReactBootstrap.Nav>
+                        <ReactBootstrap.NavDropdown eventKey={3} title="All" id="basic-nav-dropdown">
+                            <ReactBootstrap.MenuItem value="all" key="All" eventKey="All"
+                                                     href="#">ALL</ReactBootstrap.MenuItem>
+                            <Footer_Filtered special="" users={this.props.users}/>
+                        </ReactBootstrap.NavDropdown>
+                        <ReactBootstrap.NavDropdown eventKey={3} title="Active" id="basic-nav-dropdown1">
+                            <ReactBootstrap.MenuItem value="active" key="active" eventKey="acrtive"
+                                                     href="#/active">ALL</ReactBootstrap.MenuItem>
+                            <Footer_Filtered special="active/" users={this.props.users}/>
+                        </ReactBootstrap.NavDropdown>
+                        <ReactBootstrap.NavDropdown eventKey={3} title="Completed" id="basic-nav-dropdown2">
+                            <ReactBootstrap.MenuItem value="completed" key="completed" eventKey="completed"
+                                                     href="#/completed">ALL</ReactBootstrap.MenuItem>
+                            <Footer_Filtered special="completed/" users={this.props.users}/>
+                        </ReactBootstrap.NavDropdown>
+                    </ReactBootstrap.Nav>
+                </ReactBootstrap.Navbar.Collapse>
+            </ReactBootstrap.Navbar>
+
+        );
+
+    }
+
+
 }
 
-const TodoApp = React.createClass({
+const TodoApp =React.createClass({
     mixins: [backboneMixin],
 
     componentWillMount: function () {
@@ -499,6 +535,7 @@ const TodoApp = React.createClass({
 
     render: function () {
         return <div><img className="image_class" src="/images/todo-list.jpg"/>
+            <HeaderMeu  users={this.state.users}/>
             <TodoBanner qtyTodos={this.state.collection.length}/>
             <TodoInput addItem={this.addItem} />
             <TodoList nowShowing={this.state.nowShowing} nowShowingsuser={this.state.nowShowingsuser}
@@ -553,7 +590,6 @@ const Router = Backbone.Router.extend({
         react.setState({nowShowingsuser: param});
     }
 });
-console.log(todoItems);
 
 const router = new Router();
 Backbone.history.start();
