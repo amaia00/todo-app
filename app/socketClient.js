@@ -3,7 +3,7 @@
 /**
  * Created by amaia.nazabal on 6/10/17.
  */
-// TODO addTask port to config
+
 var wssUrl = "ws://10.0.2.2:3002";
 
 var socket;

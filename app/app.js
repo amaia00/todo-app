@@ -17,6 +17,9 @@ apps.COMPLETED_TODOS = 'completed';
 
 EVENT.reload = underscore.extend({}, Backbone.Events);
 
+/**
+ * Les models pour les collections des taches et des utilisateurs
+ */
 const taskModel = Backbone.Model.extend({
     defaults: {
         id: '',
@@ -53,6 +56,12 @@ const users = new Backbone.Collection({
 });
 users.set([]);
 
+/**
+ * La fonction qui vérifie si l'utilisateur a changé sa position et qui appele au serveur
+ * pour verifier s'il a des tâches qui sont proches
+ * @param position
+ * @returns {Array}
+ */
 function onSuccess(position) {
     var info = [];
     info.push(position.coords.latitude);
@@ -68,11 +77,22 @@ function onError(error) {
         'message: ' + error.message + '\n');
 }
 
-// Options: throw an error if no update is received every 1 seconds.
-/* TODO add parameter */
+/**
+ * La variable qui surveille si l'utilisateur change sa position
+ * @type {Number}
+ */
 var watchID = navigator.geolocation.watchPosition(onSuccess, onError, {timeout: 10000, enableHighAccuracy: true});
 var ACTUAL_POSITION = {};
 
+/**
+ * Cette méthode prendre l'input de l'utilisateur (l'adresse) et envoie le text au service de Google
+ * pour détérminer les coodonnées
+ *
+ * @param addresse l'adresse que l'utilisateur a rentré
+ * @param rappel s'il veut étre notifié s'il est proche ou pas d'une tâche
+ * @param useActualPosition s'il veut qu'on utilise sa position actuel pour assigner à la tache
+ * @param callback la fonction qui va envoyer les données au serveur.
+ */
 var getGeoCoordinates = function (addresse, rappel, useActualPosition, callback) {
     var add = {lat: '', long: ''};
     if (rappel && !useActualPosition) {
@@ -94,8 +114,6 @@ var getGeoCoordinates = function (addresse, rappel, useActualPosition, callback)
                     add['lat'] = 0;
                     add['long'] = 0;
 
-                    add['lat'] = 0;
-                    add['long'] = 0;
                     callback(add);
                 }
             }
@@ -108,13 +126,15 @@ var getGeoCoordinates = function (addresse, rappel, useActualPosition, callback)
     } else if (rappel && useActualPosition) {
         add['lat'] = ACTUAL_POSITION.lat;
         add['long'] = ACTUAL_POSITION.long;
-
-        callback(add);
     }
+
+    callback(add);
 
 };
 
-
+/**
+ * Le Banner avec la quantité des tâches (actives et non actives).
+ */
 class TodoBanner extends React.Component {
     render() {
         return <div className="row">
@@ -126,22 +146,39 @@ class TodoBanner extends React.Component {
     }
 }
 
+/**
+ * Le check puisque l'utilisateur puisse indiquer qu'il veut assigner sa position actuelle à la tache
+ */
 class UseActualPosition extends React.Component {
+    constructor() {
+        super();
+    }
+
     render() {
+        const value = this.props.value;
         return (
             <ReactBootstrap.FormGroup>
-                <ReactBootstrap.Checkbox name="checkPosition" inline onChange={this.props.onChange}>
+                <ReactBootstrap.Checkbox name="checkPosition" inline onChange={this.props.onChange}
+                                         checked={value}>
                     Voulez vous qu'on utilise votre position actuelle pour assigner à la tâche
                 </ReactBootstrap.Checkbox>
             </ReactBootstrap.FormGroup>)
     }
 }
 
+/**
+ * L'option pour indiquer s'i veut etre notifié s'il est proche d'une tâche.
+ */
 class Rappel extends React.Component {
+    constructor() {
+        super();
+    }
     render() {
+        const value = this.props.value;
         return (
             <ReactBootstrap.FormGroup>
-                <ReactBootstrap.Checkbox name="radioGroup" inline onChange={this.props.onChange}>
+                <ReactBootstrap.Checkbox name="radioGroup" inline onChange={this.props.onChange}
+                                         checked={value}>
                     Voulez vous etre rappelé lorsque vous serez proche de la tache
                 </ReactBootstrap.Checkbox>
                 {' '}
@@ -150,20 +187,14 @@ class Rappel extends React.Component {
     }
 }
 
-var getCurrentPosition = navigator.geolocation.getCurrentPosition(function (position) {
-    ACTUAL_POSITION = {
-        lat: position.coords.latitude,
-        long: position.coords.longitude
-    };
-}, function (error) {
-    console.debug(error);
-}, {
-    maximumAge: 3000, timeout: 60000, enableHighAccuracy: true
-});
-
-class TodoInput extends React.Component {
-    constructor(props) {
-        super(props);
+/**
+ * Le component pour le formulaire pour ajouter des nouvelles tâches.
+ * L'utilisateur peut mettre un adresse ou bien selectionner la option de recupèrer sa position actuelle
+ * et la fonction `handleUsePositionChange` va garder la latitude et longitude de la position actuelle.
+ */
+class TodoForm extends React.Component {
+    constructor() {
+        super();
         this.state = {item: '', personne: '', adresse: '', rappel: false, useActualPosition: false};
 
         this.disabledAddress = false;
@@ -194,11 +225,22 @@ class TodoInput extends React.Component {
 
     handleUsePositionChange(event) {
         this.setState({useActualPosition: event.target.checked});
+
         if (event.target.value)
-            this.disabledAddress = true;
+            this.setState({disabledAddress: true});
         else
-            disabledAddress = false;
-        getCurrentPosition();
+            this.setState({disabledAddress: false});
+
+        navigator.geolocation.getCurrentPosition(function (position) {
+            ACTUAL_POSITION = {
+                lat: position.coords.latitude,
+                long: position.coords.longitude
+            };
+        }, function (error) {
+            console.debug(error);
+        }, {
+            maximumAge: 3000, timeout: 60000, enableHighAccuracy: true
+        });
     }
 
     handleSubmit(event) {
@@ -210,7 +252,8 @@ class TodoInput extends React.Component {
             this.props.addItem(this.state.item, this.state.personne, this.state.adresse, this.state.rappel,
                 this.state.useActualPosition);
 
-            this.setState({item: '', personne: '', adresse: ''});
+            this.setState({item: '', personne: '', adresse: '', disabledAddress: false, rappel: false,
+                useActualPosition: false});
 
             this.focusInput();
             return false;
@@ -228,6 +271,7 @@ class TodoInput extends React.Component {
                     <div className="row">
                         <div className="col-lg-offset-2 col-lg-8 col-md-offset-3 col-md-6 col-xs-offset-0 col-xs-12">
                             <div className="form-group">
+                                <label>Tache</label>
                                 <div className="input-group">
                                 <span className="input-group-addon" key="basic-addon1"><span
                                     className="glyphicon glyphicon-tasks" aria-hidden="true"/></span>
@@ -238,29 +282,31 @@ class TodoInput extends React.Component {
                                                this.textInput = input;
                                            }}/>
                                 </div>
+                                <label>User:</label>
                                 <div className="input-group">
                                 <span className="input-group-addon" key="basic-addon2"><span
                                     className="glyphicon glyphicon-user" aria-hidden="true"/></span>
                                     <input type="text" className="form-control" aria-describedby="basic-addon2"
                                            placeholder="Entrer un nom pour assigner cette tache"
                                            onChange={this.handleUserChange} value={this.state.personne}
-                                           disabled={this.disabledAddress}
                                     />
 
                                 </div>
 
+                                <label>Adresse:</label>
                                 <div className="input-group">
                                 <span className="input-group-addon" key="basic-addon3"><span
-                                    className="glyphicon glyphicon-user" aria-hidden="true"/></span>
+                                    className="glyphicon glyphicon-map-marker" aria-hidden="true"/></span>
                                     <input type="text" className="form-control" aria-describedby="basic-addon3"
                                            placeholder="Entrer un ad pour assigner cette tache"
                                            onChange={this.handleAdresseChange} value={this.state.adresse}
+                                           disabled={this.state.disabledAddress}
                                     />
                                 </div>
                             </div>
                         </div>
-                        <UseActualPosition onChange={this.handleUsePositionChange}/>
-                        <Rappel onChange={this.handleRappelChange}/>
+                        <UseActualPosition onChange={this.handleUsePositionChange} value={this.state.useActualPosition}/>
+                        <Rappel onChange={this.handleRappelChange} value={this.state.rappel}/>
                         <br/>
                         <div className=" col-md-offset-4 col-md-4 col-xs-offset-2 col-xs-8">
                             <button type="submit" className="btn btn-primary btn-block btn_custom shape-1  effect-4">
@@ -275,6 +321,9 @@ class TodoInput extends React.Component {
 }
 
 
+/**
+ * Les options pour changer l'état et supprimer une tâche dans la liste.
+ */
 class TaskAction extends React.Component {
 
     updateItem() {
@@ -309,6 +358,10 @@ class TaskAction extends React.Component {
     }
 }
 
+/**
+ * Le component pour montrer un item dans la liste de tâches avec les actions possibles
+ * (changer d'état et supprimer)
+ */
 class TodoListItem extends React.Component {
     render() {
         let cssClass = 'list-group-item list-group-item-';
@@ -332,6 +385,10 @@ class TodoListItem extends React.Component {
     }
 }
 
+/**
+ * Le footer qui montre le filtre pour selectionner les tâches qui vont se montrer
+ * selon les criteres de l'utilisateur: soit par état ou par le prenom de l'utilisateur assigné.
+ */
 class Footer_Filtered extends React.Component {
     render() {
         const listuser = [];
@@ -344,7 +401,9 @@ class Footer_Filtered extends React.Component {
     }
 }
 
-
+/**
+ * Le component pour creer le filtre (explique dans le composant précedent)
+ */
 class Footer extends React.Component {
     render() {
         return (
@@ -380,20 +439,25 @@ class Footer extends React.Component {
     }
 }
 
+/**
+ * Le composant pour montrer s'il y a une tâche proche de l'utilisateur dans un element html
+ */
 class Message extends React.Component {
     constructor() {
         super();
-        //this.state = {msg: this.props.msg};
     }
 
     render() {
         if (this.props.message.length !== 0)
-            return <p className="text-info">{this.props.message}</p>
+            return <p className="text-info">{this.props.message}</p>;
         else
-            return <p/>
+            return <p/>;
     }
 }
 
+/**
+ * Le composant pour montrer la liste de taches avec ses états.
+ */
 class TodoList extends React.Component {
     constructor() {
         super();
@@ -458,7 +522,11 @@ class TodoList extends React.Component {
         return <h1/>
     }
 }
-class HeaderMeu extends React.Component {
+
+/**
+ * Le header du menu pour la vue mobile sur tout.
+ */
+class HeaderMenu extends React.Component {
     render() {
 
         return (
@@ -493,10 +561,12 @@ class HeaderMeu extends React.Component {
         );
 
     }
-
-
 }
 
+/**
+ * Le composant principau qui est les père des autres composant, qui a tous les evenements pour ajouter
+ * supprimer ou changer les etat des tâches.
+ */
 const TodoApp = React.createClass({
     mixins: [backboneMixin],
 
@@ -564,10 +634,10 @@ const TodoApp = React.createClass({
     },
 
     render: function () {
-        return <div><img className="image_class" src="/images/todo-list.jpg"/>
-            <HeaderMeu users={this.state.users}/>
+        return <div>
+            <HeaderMenu users={this.state.users}/>
             <TodoBanner qtyTodos={this.state.collection.length}/>
-            <TodoInput addItem={this.addItem}/>
+            <TodoForm addItem={this.addItem}/>
             <Message message={this.state.msg}/>
             <TodoList nowShowing={this.state.nowShowing} nowShowingsuser={this.state.nowShowingsuser}
                       listetodos={this.state.collection} updateItem={this.updateItem}

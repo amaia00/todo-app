@@ -21,15 +21,17 @@
     "grunt-contrib-watch": "^1.0.0",
     "grunt-express": "^1.4.1",
     "grunt-parallel": "^0.4.1",
+    "grunt-webpack": "^3.0.0",
     "html-webpack-plugin": "^2.16.1",
     "jquery": "^3.2.1",
     "jshint": "^2.9.4",
+    "prop-types": "^15.5.10",
     "react": "^15.5.4",
     "react-bootstrap": "^0.31.0",
     "react-dom": "^15.5.4",
     "tls": "0.0.1",
     "underscore": "^1.8.3",
-    "webpack": "^2.5.0",
+    "webpack": "^2.6.1",
     "ws": "^2.3.1",
     "wscat": "^2.0.1"
   },
@@ -43,7 +45,7 @@
     "grunt-parallel": "^0.4.1",
     "html-webpack-plugin": "^2.16.1",
     "jshint": "^2.9.4",
-    "webpack": "^2.6.1",
+    "webpack": "^2.1.0-beta.22",
     "ws": "^2.3.1",
     "wscat": "^2.0.1"
   }

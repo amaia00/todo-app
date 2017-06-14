@@ -1,9 +1,11 @@
+var webpackConfig = require("./webpack.config.js");
+var webpack = require("webpack");
 module.exports = function(grunt) {
     grunt.initConfig({
 
         express: {
             build: {        // Nom de la tache pour le sereveur
-                options : {
+                options: {
                     server: ('server/server.js')
                 }
             }
@@ -18,25 +20,36 @@ module.exports = function(grunt) {
         },
         less: {
             development: {
-        options: {
-            paths: ["Less"],
-            yuicompress: true
+                options: {
+                    paths: ["less"],
+                    yuicompress: true
+                },
+                files: {
+                    "./style/style.css": "less/style.less"
+                }
+            }
         },
-        files: {
-            "./style/style.css": "Less/style.less"
+        watch: {
+            files: "./less/*",
+            tasks: ["less"]
+        },
+        webpack: {
+            options: {
+                stats: !process.env.NODE_ENV || process.env.NODE_ENV === 'development'
+            },
+            prod: webpackConfig,
+            dev: Object.assign({ watch: true }, webpackConfig)
         }
-    }
-},
-    watch: {
-        files: "./Less/*",
-        tasks: ["less"]
-    }
-});
 
-    grunt.registerTask('build', ['less', 'jshint', 'express', 'express-keepalive']);
+
+
+    });
+
+    grunt.registerTask('build', ['less', 'jshint','express', 'express-keepalive']);
     grunt.loadNpmTasks('grunt-express');
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-contrib-less');
     grunt.loadNpmTasks('grunt-contrib-watch');
+    grunt.loadNpmTasks('grunt-webpack');
 
 };
